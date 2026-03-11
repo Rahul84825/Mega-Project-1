@@ -142,7 +142,7 @@ export const ProductProvider = ({ children }) => {
     }
   };
 
-  const placeOrder = async ({ cartItems, address, paymentMethod, upiId }) => {
+  const placeOrder = async ({ cartItems, address, paymentMethod }) => {
     const subtotal  = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
     const delivery  = subtotal >= 999 ? 0 : 79;
     const codFee    = paymentMethod === "cod" ? 50 : 0;
@@ -172,7 +172,6 @@ export const ProductProvider = ({ children }) => {
         quantity:  i.quantity,
       })),
       paymentMethod,
-      upiId: paymentMethod === "upi" ? upiId : null,
       subtotal,
       delivery,
       total,
@@ -183,6 +182,26 @@ export const ProductProvider = ({ children }) => {
     const newOrder = data.order || data;
     setOrders((prev) => [newOrder, ...prev]);
     return newOrder;
+  };
+
+  // ── Submit UPI Transaction ID ─────────────────────────────────────
+  const submitUpiTxnId = async (orderId, upiTransactionId) => {
+    const data = await api.patch(`/api/orders/${orderId}/upi-txn`, { upiTransactionId }, token());
+    const updated = data.order || data;
+    setOrders((prev) =>
+      prev.map((o) => (o._id || o.id) === orderId ? { ...o, ...updated } : o)
+    );
+    return updated;
+  };
+
+  // ── Mark order as paid (admin) ────────────────────────────────────
+  const markOrderPaid = async (orderId) => {
+    const data = await api.patch(`/api/orders/${orderId}/mark-paid`, {}, token());
+    const updated = data.order || data;
+    setOrders((prev) =>
+      prev.map((o) => (o._id || o.id) === orderId ? { ...o, ...updated } : o)
+    );
+    return updated;
   };
 
   // ── Mark order as delivered ───────────────────────────────────────
@@ -205,7 +224,7 @@ export const ProductProvider = ({ children }) => {
       addProduct, updateProduct, deleteProduct, toggleStock,
       addOffer,   updateOffer,  deleteOffer,  toggleOffer,
       addCategory, updateCategory, deleteCategory,
-      fetchOrders, placeOrder, markOrderDelivered,
+      fetchOrders, placeOrder, markOrderDelivered, markOrderPaid, submitUpiTxnId,
     }}>
       {children}
     </ProductContext.Provider>

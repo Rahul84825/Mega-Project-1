@@ -1,9 +1,20 @@
 import { useState, useEffect } from "react";
-import { Search, Eye, X, Package, User, MapPin, CreditCard, ShoppingBag, CheckCircle2, Loader2 } from "lucide-react";
+import { Search, Eye, X, Package, User, MapPin, CreditCard, ShoppingBag, CheckCircle2, Loader2, DollarSign } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 
 const PAYMENT_LABEL = {
-  upi: "UPI", card: "Card", cod: "Cash on Delivery",
+  cod: "Cash on Delivery", upi: "UPI", card: "Card",
+};
+
+const PAYMENT_STATUS_STYLES = {
+  pending: { label: "Pending", cls: "bg-orange-50 text-orange-600" },
+  paid:    { label: "Paid",    cls: "bg-green-50 text-green-600"  },
+};
+
+const PAYMENT_METHOD_STYLES = {
+  cod:  { cls: "bg-yellow-50 text-yellow-700" },
+  upi:  { cls: "bg-green-50 text-green-700"  },
+  card: { cls: "bg-blue-50 text-blue-700"    },
 };
 
 const STATUS_STYLES = {
@@ -14,9 +25,11 @@ const STATUS_STYLES = {
 };
 
 // ── Order Detail Modal ────────────────────────────────────────────────────────
-const OrderModal = ({ order, onClose, onMarkDelivered, delivering }) => {
+const OrderModal = ({ order, onClose, onMarkDelivered, onMarkPaid, delivering, markingPaid }) => {
   const isDelivered = order.status === "delivered";
   const isDelivering = delivering === (order._id || order.id);
+  const isMarkingPaid = markingPaid === (order._id || order.id);
+  const isPaid = order.paymentStatus === "paid";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -129,11 +142,22 @@ const OrderModal = ({ order, onClose, onMarkDelivered, delivering }) => {
               </div>
               <div className="flex justify-between text-gray-500 text-xs pt-1">
                 <span>Payment Method</span>
-                <span className="font-semibold text-gray-700">
+                <span className={`font-semibold px-2 py-0.5 rounded-full ${PAYMENT_METHOD_STYLES[order.paymentMethod]?.cls || "bg-gray-100 text-gray-600"}`}>
                   {PAYMENT_LABEL[order.paymentMethod] || order.paymentMethod}
-                  {order.upiId && ` (${order.upiId})`}
                 </span>
               </div>
+              <div className="flex justify-between text-gray-500 text-xs pt-1">
+                <span>Payment Status</span>
+                <span className={`font-semibold px-2 py-0.5 rounded-full ${PAYMENT_STATUS_STYLES[order.paymentStatus]?.cls || "bg-gray-100 text-gray-500"}`}>
+                  {PAYMENT_STATUS_STYLES[order.paymentStatus]?.label || order.paymentStatus || "Pending"}
+                </span>
+              </div>
+              {order.upiTransactionId && (
+                <div className="flex justify-between text-gray-500 text-xs pt-1">
+                  <span>UPI Txn ID</span>
+                  <span className="font-semibold text-gray-700">{order.upiTransactionId}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -151,6 +175,21 @@ const OrderModal = ({ order, onClose, onMarkDelivered, delivering }) => {
                 </p>
               </div>
             </div>
+          )}
+
+          {/* Mark as Paid button */}
+          {!isPaid && (
+            <button
+              onClick={() => onMarkPaid(order._id || order.id)}
+              disabled={isMarkingPaid}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3 rounded-xl transition-colors disabled:cursor-not-allowed mb-2"
+            >
+              {isMarkingPaid ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Marking as Paid...</>
+              ) : (
+                <><DollarSign className="w-4 h-4" /> Mark as Paid</>
+              )}
+            </button>
           )}
 
           {/* Mark as Delivered button */}
@@ -175,10 +214,11 @@ const OrderModal = ({ order, onClose, onMarkDelivered, delivering }) => {
 
 // ── Main AdminOrders ──────────────────────────────────────────────────────────
 const AdminOrders = () => {
-  const { orders, fetchOrders, markOrderDelivered } = useProducts();
+  const { orders, fetchOrders, markOrderDelivered, markOrderPaid } = useProducts();
   const [search,     setSearch]     = useState("");
   const [selected,   setSelected]   = useState(null);
   const [delivering, setDelivering] = useState(null);
+  const [markingPaid, setMarkingPaid] = useState(null);
 
   useEffect(() => { fetchOrders(); }, []);
 
@@ -187,7 +227,6 @@ const AdminOrders = () => {
     setDelivering(orderId);
     try {
       const updated = await markOrderDelivered(orderId);
-      // Update modal if it's open for this order
       if (selected && (selected._id === orderId || selected.id === orderId)) {
         setSelected((prev) => ({ ...prev, ...updated }));
       }
@@ -196,6 +235,22 @@ const AdminOrders = () => {
       alert(err.message || "Failed to mark order as delivered.");
     } finally {
       setDelivering(null);
+    }
+  };
+
+  const handleMarkPaid = async (orderId) => {
+    if (markingPaid) return;
+    setMarkingPaid(orderId);
+    try {
+      const updated = await markOrderPaid(orderId);
+      if (selected && (selected._id === orderId || selected.id === orderId)) {
+        setSelected((prev) => ({ ...prev, ...updated }));
+      }
+    } catch (err) {
+      console.error("Failed to mark paid:", err.message);
+      alert(err.message || "Failed to mark order as paid.");
+    } finally {
+      setMarkingPaid(null);
     }
   };
 
@@ -258,6 +313,7 @@ const AdminOrders = () => {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Items</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Payment</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Pay Status</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
@@ -286,11 +342,28 @@ const AdminOrders = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-semibold px-2 py-1 rounded-full
-                          ${order.paymentMethod === "cod" ? "bg-orange-50 text-orange-600"
-                          : order.paymentMethod === "upi" ? "bg-green-50 text-green-600"
-                          :                                 "bg-blue-50 text-blue-600"}`}>
+                          ${PAYMENT_METHOD_STYLES[order.paymentMethod]?.cls || "bg-gray-100 text-gray-600"}`}>
                           {PAYMENT_LABEL[order.paymentMethod] || order.paymentMethod}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${PAYMENT_STATUS_STYLES[order.paymentStatus]?.cls || "bg-orange-50 text-orange-600"}`}>
+                            {PAYMENT_STATUS_STYLES[order.paymentStatus]?.label || order.paymentStatus || "Pending"}
+                          </span>
+                          {order.paymentStatus !== "paid" && (
+                            <button
+                              onClick={() => handleMarkPaid(order._id || order.id)}
+                              disabled={!!markingPaid}
+                              title="Mark as Paid"
+                              className="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {markingPaid === (order._id || order.id)
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : "Pay ✓"}
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_STYLES[order.status]?.cls || "bg-gray-100 text-gray-500"}`}>
@@ -348,7 +421,9 @@ const AdminOrders = () => {
           order={selected}
           onClose={() => setSelected(null)}
           onMarkDelivered={handleMarkDelivered}
+          onMarkPaid={handleMarkPaid}
           delivering={delivering}
+          markingPaid={markingPaid}
         />
       )}
     </div>

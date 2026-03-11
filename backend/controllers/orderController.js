@@ -182,7 +182,7 @@ const sendAdminDeliveryNotification = async (order) => {
 
 // ── POST /api/orders ──────────────────────────────────────────────────────────
 const createOrder = asyncHandler(async (req, res) => {
-  const { customer, address, items, paymentMethod, upiId, subtotal, delivery, total, itemCount } = req.body;
+  const { customer, address, items, paymentMethod, subtotal, delivery, total, itemCount } = req.body;
 
   if (!customer || !address || !items?.length || !paymentMethod) {
     res.status(400);
@@ -192,11 +192,10 @@ const createOrder = asyncHandler(async (req, res) => {
   const order = await Order.create({
     user:          req.user?._id || null,
     customer, address, items,
-    paymentMethod, upiId,
+    paymentMethod,
+    paymentStatus: "pending",
     subtotal, delivery, total, itemCount,
     status: "pending",
-    isPaid: paymentMethod !== "cod",
-    paidAt: paymentMethod !== "cod" ? new Date() : null,
   });
 
   sendOrderEmail(order).catch((err) =>
@@ -244,8 +243,6 @@ const markDelivered = asyncHandler(async (req, res) => {
 
   order.status      = "delivered";
   order.deliveredAt = new Date();
-  order.isPaid      = true;
-  order.paidAt      = order.paidAt || new Date();
 
   await order.save();
 
@@ -259,4 +256,33 @@ const markDelivered = asyncHandler(async (req, res) => {
   res.json({ message: "Order marked as delivered", order });
 });
 
-module.exports = { createOrder, getOrders, getOrderById, getMyOrders, markDelivered };
+// ── PATCH /api/orders/:id/mark-paid (admin) ──────────────────────────────────
+const markAsPaid = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) { res.status(404); throw new Error("Order not found"); }
+
+  order.paymentStatus = "paid";
+  await order.save();
+
+  res.json({ message: "Order marked as paid", order });
+});
+
+// ── PATCH /api/orders/:id/upi-txn (customer submits UPI transaction ID) ──────
+const submitUpiTransaction = asyncHandler(async (req, res) => {
+  const { upiTransactionId } = req.body;
+  if (!upiTransactionId || !upiTransactionId.trim()) {
+    res.status(400);
+    throw new Error("UPI Transaction ID is required");
+  }
+
+  const order = await Order.findById(req.params.id);
+  if (!order) { res.status(404); throw new Error("Order not found"); }
+
+  order.upiTransactionId = upiTransactionId.trim();
+  order.paymentStatus    = "paid";
+  await order.save();
+
+  res.json({ message: "UPI transaction ID submitted", order });
+});
+
+module.exports = { createOrder, getOrders, getOrderById, getMyOrders, markDelivered, markAsPaid, submitUpiTransaction };

@@ -8,6 +8,7 @@ import {
 import { useProducts } from "../context/ProductContext";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { QRCodeSVG } from "qrcode.react";
 
 const STEPS = ["Address", "Payment", "Confirm"];
 
@@ -86,13 +87,14 @@ const AddressForm = ({ data, onChange, errors }) => {
 };
 
 // ── Payment Form ──────────────────────────────────────────────────────────────
+const UPI_ID = import.meta.env.VITE_SHOP_UPI_ID || "rahul@oksbi";
+
 const PAYMENT_METHODS = [
-  { id: "upi",  label: "UPI",                 desc: "Pay via GPay, PhonePe, Paytm, BHIM", icon: Smartphone, color: "text-green-600",  bg: "bg-green-50"  },
-  { id: "card", label: "Credit / Debit Card", desc: "Visa, Mastercard, RuPay",             icon: CreditCard, color: "text-blue-600",   bg: "bg-blue-50"   },
-  { id: "cod",  label: "Cash on Delivery",    desc: "Pay when your order arrives",         icon: Banknote,   color: "text-orange-600", bg: "bg-orange-50" },
+  { id: "cod", label: "Cash on Delivery", desc: "Pay when your order arrives",         icon: Banknote,   color: "text-orange-600", bg: "bg-orange-50" },
+  { id: "upi", label: "Pay with UPI",     desc: "Pay via GPay, PhonePe, Paytm, BHIM", icon: Smartphone, color: "text-green-600",  bg: "bg-green-50"  },
 ];
 
-const PaymentForm = ({ selected, onSelect, upiId, onUpiChange, errors }) => (
+const PaymentForm = ({ selected, onSelect, errors, orderTotal }) => (
   <div>
     <div className="flex items-center gap-2 mb-5">
       <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -122,31 +124,33 @@ const PaymentForm = ({ selected, onSelect, upiId, onUpiChange, errors }) => (
               </div>
             </button>
 
-            {isSelected && method.id === "upi" && (
-              <div className="mt-2 ml-14">
-                <input
-                  type="text"
-                  value={upiId}
-                  onChange={(e) => onUpiChange(e.target.value)}
-                  placeholder="yourname@upi"
-                  className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.upiId ? "border-red-400 bg-red-50" : "border-gray-200"}`}
-                />
-                {errors.upiId && <p className="text-xs text-red-500 mt-1">{errors.upiId}</p>}
-              </div>
-            )}
-            {isSelected && method.id === "card" && (
-              <div className="mt-2 ml-14 space-y-2">
-                <input type="text" placeholder="Card Number" maxLength={19} className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="text" placeholder="MM / YY" className="px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input type="text" placeholder="CVV" maxLength={4} className="px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <p className="text-[11px] text-gray-400">Card payments via Razorpay (coming soon)</p>
-              </div>
-            )}
             {isSelected && method.id === "cod" && (
               <div className="mt-2 ml-14 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
                 <p className="text-xs text-orange-700 font-medium">₹50 COD handling fee applies. Pay in cash when delivered.</p>
+              </div>
+            )}
+
+            {isSelected && method.id === "upi" && (
+              <div className="mt-3 ml-14 space-y-3">
+                <div className="bg-green-50 border border-green-100 rounded-lg px-4 py-3">
+                  <p className="text-xs text-green-800 font-semibold mb-2">Scan QR code or tap the button below to pay via UPI</p>
+                  <div className="flex justify-center mb-3">
+                    <QRCodeSVG
+                      value={`upi://pay?pa=${UPI_ID}&pn=Mahalaxmi%20Steels&am=${orderTotal}&cu=INR`}
+                      size={180}
+                      className="rounded-lg border border-green-200"
+                    />
+                  </div>
+                  <a
+                    href={`upi://pay?pa=${UPI_ID}&pn=Mahalaxmi%20Steels&am=${orderTotal}&cu=INR`}
+                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors"
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    Pay ₹{orderTotal.toLocaleString("en-IN")} via UPI
+                  </a>
+                  <p className="text-[11px] text-green-600 mt-2 text-center">UPI ID: {UPI_ID}</p>
+                </div>
+                <p className="text-xs text-gray-500">After paying, place your order and enter the UPI Transaction ID on the next screen.</p>
               </div>
             )}
           </div>
@@ -218,11 +222,28 @@ const OrderSummary = ({ cartItems, cartTotal, codFee = 0 }) => {
 };
 
 // ── Order Confirmation ────────────────────────────────────────────────────────
-const OrderConfirmation = ({ orderId, address = {}, paymentMethod = "", cartTotal = 0 }) => {
+const OrderConfirmation = ({ orderId, dbOrderId, address = {}, paymentMethod = "", cartTotal = 0, onSubmitUpiTxn }) => {
   const safeCartTotal = toNumber(cartTotal);
   const delivery = safeCartTotal >= 999 ? 0 : 79;
   const codFee = paymentMethod === "cod" ? 50 : 0;
   const total = safeCartTotal + delivery + codFee;
+
+  const [upiTxnId, setUpiTxnId]     = useState("");
+  const [txnSubmitted, setTxnSubmitted] = useState(false);
+  const [submitting, setSubmitting]     = useState(false);
+
+  const handleTxnSubmit = async () => {
+    if (!upiTxnId.trim()) return;
+    setSubmitting(true);
+    try {
+      await onSubmitUpiTxn(dbOrderId, upiTxnId.trim());
+      setTxnSubmitted(true);
+    } catch {
+      // silently ignore
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="max-w-lg mx-auto text-center py-8">
@@ -237,8 +258,8 @@ const OrderConfirmation = ({ orderId, address = {}, paymentMethod = "", cartTota
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-left mb-5 space-y-3 text-sm">
         {[
           ["Order ID",    `#${orderId}`],
-          ["Amount Paid", `₹${total.toLocaleString("en-IN")}`],
-          ["Payment",     paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod === "upi" ? "UPI" : "Card"],
+          ["Amount",      `₹${total.toLocaleString("en-IN")}`],
+          ["Payment",     paymentMethod === "cod" ? "Cash on Delivery" : "UPI"],
           ["Deliver to",  `${address.address1}, ${address.city} — ${address.pincode}`],
           ["Est. Delivery", "3–5 Business Days"],
         ].map(([label, value]) => (
@@ -248,6 +269,37 @@ const OrderConfirmation = ({ orderId, address = {}, paymentMethod = "", cartTota
           </div>
         ))}
       </div>
+
+      {/* UPI Transaction ID form */}
+      {paymentMethod === "upi" && !txnSubmitted && (
+        <div className="bg-green-50 border border-green-100 rounded-xl p-5 mb-5 text-left">
+          <h4 className="text-sm font-bold text-green-800 mb-2">Enter UPI Transaction ID</h4>
+          <p className="text-xs text-green-700 mb-3">Please enter the UPI transaction/reference ID from your payment app to confirm your payment.</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={upiTxnId}
+              onChange={(e) => setUpiTxnId(e.target.value)}
+              placeholder="e.g. 412345678901"
+              className="flex-1 px-3 py-2.5 text-sm border border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <button
+              onClick={handleTxnSubmit}
+              disabled={submitting || !upiTxnId.trim()}
+              className="px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-sm font-semibold rounded-lg transition-colors disabled:cursor-not-allowed"
+            >
+              {submitting ? "Submitting..." : "Submit"}
+            </button>
+          </div>
+        </div>
+      )}
+      {paymentMethod === "upi" && txnSubmitted && (
+        <div className="bg-green-50 border border-green-100 rounded-xl p-4 mb-5 flex items-center gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+          <p className="text-sm font-semibold text-green-800">UPI Transaction ID submitted successfully!</p>
+        </div>
+      )}
+
       <p className="text-xs text-gray-400 mb-6">
         Confirmation will be sent to <span className="font-medium text-gray-600">{address.email}</span>
       </p>
@@ -298,7 +350,7 @@ const LoginWall = ({ onLogin }) => (
 // ── Main Checkout Component ───────────────────────────────────────────────────
 const Checkout = () => {
   const navigate = useNavigate();
-  const { placeOrder } = useProducts();
+  const { placeOrder, submitUpiTxnId } = useProducts();
   const { cartItems, cartTotal, clearCart } = useCart();
   const { user, loading: authLoading } = useAuth();
 
@@ -308,10 +360,10 @@ const Checkout = () => {
   const [step,                   setStep]                   = useState(0);
   const [address,                setAddress]                = useState({ name: "", phone: "", email: "", address1: "", address2: "", city: "", pincode: "", state: "Maharashtra", country: "India" });
   const [paymentMethod,          setPayment]                = useState("");
-  const [upiId,                  setUpiId]                  = useState("");
   const [errors,                 setErrors]                 = useState({});
   const [placing,                setPlacing]                = useState(false);
   const [confirmedOrderId,       setConfirmedOrderId]       = useState("");
+  const [confirmedDbOrderId,     setConfirmedDbOrderId]     = useState("");
   const [confirmedCartTotal,     setConfirmedCartTotal]     = useState(0);
   const [confirmedPaymentMethod, setConfirmedPaymentMethod] = useState("");
 
@@ -367,21 +419,16 @@ const Checkout = () => {
         cartItems: safeCartItems,
         address,
         paymentMethod,
-        upiId,
       });
 
-      const resolvedOrderId =
-        order?.orderId || order?._id || order?.id || `TEMP-${Date.now()}`;
-
-      const resolvedTotal =
-        toNumber(order?.totalPrice ?? order?.total, 0) || currentTotal;
-
-      const resolvedPayment =
-        order?.paymentMethod || order?.data?.paymentMethod || paymentMethod;
+      const dbOrderId = order?._id || order?.id;
+      const resolvedOrderId = order?.orderId || dbOrderId || `TEMP-${Date.now()}`;
+      const resolvedTotal   = toNumber(order?.total, 0) || currentTotal;
 
       setConfirmedOrderId(resolvedOrderId);
+      setConfirmedDbOrderId(dbOrderId);
       setConfirmedCartTotal(resolvedTotal);
-      setConfirmedPaymentMethod(resolvedPayment);
+      setConfirmedPaymentMethod(paymentMethod);
 
       clearCart();
       setStep(2);
@@ -478,9 +525,11 @@ const Checkout = () => {
         {step === 2 ? (
           <OrderConfirmation
             orderId={confirmedOrderId}
+            dbOrderId={confirmedDbOrderId}
             address={address}
             paymentMethod={confirmedPaymentMethod || paymentMethod}
             cartTotal={confirmedCartTotal}
+            onSubmitUpiTxn={submitUpiTxnId}
           />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
@@ -516,9 +565,8 @@ const Checkout = () => {
                   <PaymentForm
                     selected={paymentMethod}
                     onSelect={setPayment}
-                    upiId={upiId}
-                    onUpiChange={setUpiId}
                     errors={errors}
+                    orderTotal={currentTotal}
                   />
                 </>
               )}
