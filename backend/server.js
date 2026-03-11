@@ -28,17 +28,21 @@ app.use("/api/orders",     require("./routes/orderRoutes"));
 app.use("/api/offers",     require("./routes/offerRoutes"));
 app.use("/api/upload",     require("./routes/uploadRoutes"));
 app.use("/api/contact",    require("./routes/contactRoutes"));
+app.use("/api/payment",    require("./routes/paymentRoutes"));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", message: "Mahalaxmi Steels API is running" });
 });
 
+app.get("/", (req, res) => {
+  res.send("Mahalaxmi Steels Backend API Running");
+});
 // ── Error Middleware ──────────────────────────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`\n🚀 Server running in ${process.env.NODE_ENV} mode on port http://localhost:${PORT}/`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
