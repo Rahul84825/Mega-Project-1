@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, memo } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ShoppingCart,
@@ -11,7 +11,7 @@ import {
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
-const Navbar = () => {
+const Navbar = memo(() => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -27,46 +27,49 @@ const Navbar = () => {
   const isProductsPage = location.pathname === "/products";
 
   const navLinkClass = ({ isActive }) =>
-    `px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
+    `px-4 py-2 rounded-full text-sm font-bold transition-colors duration-200 ${
       isActive
         ? "bg-blue-50 text-blue-700 shadow-sm"
         : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
     }`;
 
   const mobileNavLinkClass = ({ isActive }) =>
-    `block px-4 py-3 rounded-xl text-base font-bold transition-all duration-300 ${
+    `block px-4 py-3 rounded-xl text-base font-bold transition-colors duration-200 ${
       isActive
         ? "bg-blue-50 text-blue-700"
         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
     }`;
 
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
     setMobileSearchOpen(false);
-  };
+  }, [searchQuery, navigate]);
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = useCallback((e) => {
     const val = e.target.value;
     setSearchQuery(val);
     if (val === "") {
       navigate("/products");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  };
+  }, [navigate]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout();
     setUserMenuOpen(false);
     navigate("/");
-  };
+  }, [logout, navigate]);
 
-  const handleUserMenuBlur = (e) => {
+  const handleUserMenuBlur = useCallback((e) => {
     if (!userMenuRef.current?.contains(e.relatedTarget)) {
       setUserMenuOpen(false);
     }
-  };
+  }, []);
+
+  const toggleMenu = useCallback(() => setMenuOpen((o) => !o), []);
+  const toggleMobileSearch = useCallback(() => setMobileSearchOpen((o) => !o), []);
 
   // ── Auth section rendered in desktop Actions ───────────────────────
   const renderDesktopAuth = () => {
@@ -96,7 +99,7 @@ const Navbar = () => {
 
           {/* User Dropdown */}
           <div
-            className={`absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl shadow-slate-200/50 border border-slate-100 p-2 z-50 transition-all duration-200 origin-top-right ${userMenuOpen ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"}`}
+            className={`absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 transition-all duration-150 origin-top-right ${userMenuOpen ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"}`}
           >
             <div className="px-3 py-2 mb-1 border-b border-slate-100">
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">
@@ -213,28 +216,26 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl shadow-sm border-b border-slate-200/80">
+    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 md:h-20 gap-4">
           {/* ── Brand ── */}
           <NavLink
             to="/"
-            className="flex items-center gap-2.5 group flex-shrink-0"
+            className="flex items-center gap-2 sm:gap-2.5 group flex-shrink-0 min-w-0"
           >
-            <div className="flex items-center gap-4 group cursor-pointer">
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center group-hover:scale-105 group-hover:rotate-3 shadow-md shadow-blue-900/20 transition-all duration-300">
-                <span className="text-white font-black text-lg drop-shadow-sm">
-                  M
-                </span>
-              </div>
-              <div>
-                <span className="text-xl font-extrabold text-slate-900 tracking-tight hidden sm:block group-hover:text-blue-600 transition-colors">
-                  MahaLaxmi Steel
-                </span>
-                <p className="text-blue-400/80 text-xs font-semibold tracking-wide uppercase mt-0.5">
-                  & Home Appliance
-                </p>
-              </div>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:rotate-3 shadow-md shadow-blue-900/20 transition-transform duration-200">
+              <span className="text-white font-black text-base sm:text-lg drop-shadow-sm">
+                M
+              </span>
+            </div>
+            <div className="min-w-0">
+              <span className="text-sm sm:text-base md:text-lg lg:text-xl font-extrabold text-slate-900 tracking-tight block truncate group-hover:text-blue-600 transition-colors">
+                MahaLaxmi Steel
+              </span>
+              <p className="text-blue-400/80 text-[10px] sm:text-xs font-semibold tracking-wide uppercase leading-tight">
+                & Home Appliance
+              </p>
             </div>
           </NavLink>
 
@@ -264,10 +265,10 @@ const Navbar = () => {
 
           {/* ── Desktop Search (only on /products) ── */}
           <div
-            className={`hidden md:flex flex-1 max-w-sm transition-all duration-500 ease-out ${
+            className={`hidden md:flex flex-1 max-w-sm transition-opacity duration-200 ${
               isProductsPage
-                ? "opacity-100 translate-x-0 pointer-events-auto"
-                : "opacity-0 translate-x-4 pointer-events-none w-0"
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 pointer-events-none w-0"
             }`}
           >
             {isProductsPage && (
@@ -318,10 +319,10 @@ const Navbar = () => {
           </div>
 
           {/* ── Mobile: Search + Cart + Hamburger ── */}
-          <div className="flex items-center gap-1.5 md:hidden">
+          <div className="flex items-center gap-1 md:hidden flex-shrink-0">
             {isProductsPage && (
               <button
-                onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+                onClick={toggleMobileSearch}
                 className={`p-2 rounded-full transition-colors ${mobileSearchOpen ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:bg-slate-50"}`}
                 aria-label="Toggle search"
               >
@@ -334,7 +335,7 @@ const Navbar = () => {
             )}
             <NavLink
               to="/cart"
-              className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-50 rounded-full transition-colors relative mr-1"
+              className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-50 rounded-full transition-colors relative"
               aria-label="Cart"
             >
               <ShoppingCart className="w-5 h-5" />
@@ -345,19 +346,19 @@ const Navbar = () => {
               )}
             </NavLink>
             <button
-              className="p-2 text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
-              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 text-slate-600 hover:bg-slate-50 rounded-full"
+              onClick={toggleMenu}
               aria-label="Toggle menu"
             >
               <div className="space-y-1.5">
                 <span
-                  className={`block w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${menuOpen ? "rotate-45 translate-y-2" : ""}`}
+                  className={`block w-5 h-0.5 bg-current rounded-full transition-transform duration-200 ${menuOpen ? "rotate-45 translate-y-2" : ""}`}
                 />
                 <span
-                  className={`block w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${menuOpen ? "opacity-0" : ""}`}
+                  className={`block w-5 h-0.5 bg-current rounded-full transition-opacity duration-200 ${menuOpen ? "opacity-0" : ""}`}
                 />
                 <span
-                  className={`block w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${menuOpen ? "-rotate-45 -translate-y-2" : ""}`}
+                  className={`block w-5 h-0.5 bg-current rounded-full transition-transform duration-200 ${menuOpen ? "-rotate-45 -translate-y-2" : ""}`}
                 />
               </div>
             </button>
@@ -367,7 +368,7 @@ const Navbar = () => {
 
       {/* ── Mobile Search Bar ── */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`md:hidden overflow-hidden transition-all duration-150 ease-out ${
           mobileSearchOpen && isProductsPage
             ? "max-h-24 opacity-100 border-t border-slate-100 bg-slate-50/50"
             : "max-h-0 opacity-0"
@@ -403,7 +404,7 @@ const Navbar = () => {
 
       {/* ── Mobile Menu ── */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out bg-white shadow-2xl ${
+        className={`md:hidden overflow-hidden transition-all duration-150 ease-out bg-white shadow-lg ${
           menuOpen
             ? "max-h-[500px] opacity-100 border-t border-slate-100"
             : "max-h-0 opacity-0"
@@ -450,6 +451,7 @@ const Navbar = () => {
       </div>
     </nav>
   );
-};
+});
 
+Navbar.displayName = "Navbar";
 export default Navbar;

@@ -9,6 +9,8 @@ import { useProducts } from "../context/ProductContext";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { QRCodeSVG } from "qrcode.react";
+import { checkDeliveryEligibility, MAX_DELIVERY_RADIUS_KM } from "../utils/delivery";
+import { DeliveryNotice } from "../components/DeliveryNotice";
 
 const STEPS = ["Address", "Payment", "Confirm"];
 
@@ -45,24 +47,26 @@ const StepBar = ({ current }) => (
   </div>
 );
 
+// ── Address Field ─────────────────────────────────────────────────────────────
+const AddressField = ({ label, name, placeholder, required, half, value, onChange, error }) => (
+  <div className={half ? "col-span-1" : "col-span-2"}>
+    <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <input
+      type="text"
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${error ? "border-red-400 bg-red-50" : "border-gray-200"}`}
+    />
+    {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+  </div>
+);
+
 // ── Address Form ──────────────────────────────────────────────────────────────
 const AddressForm = ({ data, onChange, errors }) => {
   const set = (k, v) => onChange({ ...data, [k]: v });
-  const Field = ({ label, name, placeholder, required, half }) => (
-    <div className={half ? "col-span-1" : "col-span-2"}>
-      <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type="text"
-        value={data[name] || ""}
-        onChange={(e) => set(name, e.target.value)}
-        placeholder={placeholder}
-        className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${errors[name] ? "border-red-400 bg-red-50" : "border-gray-200"}`}
-      />
-      {errors[name] && <p className="text-xs text-red-500 mt-1">{errors[name]}</p>}
-    </div>
-  );
   return (
     <div>
       <div className="flex items-center gap-2 mb-5">
@@ -72,15 +76,15 @@ const AddressForm = ({ data, onChange, errors }) => {
         <h3 className="text-base font-bold text-gray-900">Delivery Address</h3>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Full Name"                  name="name"     placeholder="Rajesh Kumar"                        required half />
-        <Field label="Phone Number"               name="phone"    placeholder="+91 98765 43210"                    required half />
-        <Field label="Email"                      name="email"    placeholder="you@email.com"                      required />
-        <Field label="Address Line 1"             name="address1" placeholder="Flat / House No, Building, Street"  required />
-        <Field label="Address Line 2 (optional)"  name="address2" placeholder="Area, Colony, Landmark" />
-        <Field label="City"                       name="city"     placeholder="Pune"                               required half />
-        <Field label="Pincode"                    name="pincode"  placeholder="411035"                             required half />
-        <Field label="State"                      name="state"    placeholder="Maharashtra"                        required half />
-        <Field label="Country"                    name="country"  placeholder="India"                              required half />
+        <AddressField label="Full Name"                  name="name"     placeholder="Rajesh Kumar"                        required half value={data.name || ""}     onChange={(e) => set("name", e.target.value)}     error={errors.name} />
+        <AddressField label="Phone Number"               name="phone"    placeholder="+91 98765 43210"                    required half value={data.phone || ""}    onChange={(e) => set("phone", e.target.value)}    error={errors.phone} />
+        <AddressField label="Email"                      name="email"    placeholder="you@email.com"                      required       value={data.email || ""}    onChange={(e) => set("email", e.target.value)}    error={errors.email} />
+        <AddressField label="Address Line 1"             name="address1" placeholder="Flat / House No, Building, Street"  required       value={data.address1 || ""} onChange={(e) => set("address1", e.target.value)} error={errors.address1} />
+        <AddressField label="Address Line 2 (optional)"  name="address2" placeholder="Area, Colony, Landmark"                            value={data.address2 || ""} onChange={(e) => set("address2", e.target.value)} error={errors.address2} />
+        <AddressField label="City"                       name="city"     placeholder="Pune"                               required half value={data.city || ""}     onChange={(e) => set("city", e.target.value)}     error={errors.city} />
+        <AddressField label="Pincode"                    name="pincode"  placeholder="411035"                             required half value={data.pincode || ""}  onChange={(e) => set("pincode", e.target.value)}  error={errors.pincode} />
+        <AddressField label="State"                      name="state"    placeholder="Maharashtra"                        required half value={data.state || ""}    onChange={(e) => set("state", e.target.value)}    error={errors.state} />
+        <AddressField label="Country"                    name="country"  placeholder="India"                              required half value={data.country || ""}  onChange={(e) => set("country", e.target.value)}  error={errors.country} />
       </div>
     </div>
   );
@@ -362,6 +366,8 @@ const Checkout = () => {
   const [paymentMethod,          setPayment]                = useState("");
   const [errors,                 setErrors]                 = useState({});
   const [placing,                setPlacing]                = useState(false);
+  const [checkingDelivery,       setCheckingDelivery]       = useState(false);
+  const [deliveryDistance,       setDeliveryDistance]       = useState(null);
   const [confirmedOrderId,       setConfirmedOrderId]       = useState("");
   const [confirmedDbOrderId,     setConfirmedDbOrderId]     = useState("");
   const [confirmedCartTotal,     setConfirmedCartTotal]     = useState(0);
@@ -387,6 +393,30 @@ const Checkout = () => {
   const codFee       = paymentMethod === "cod" ? 50 : 0;
   const safeCartTotal = toNumber(cartTotal);
   const currentTotal  = safeCartTotal + (safeCartTotal >= 999 ? 0 : 79) + codFee;
+
+  // ── Validate delivery radius ──────────────────────────────────
+  const validateDeliveryRadius = async () => {
+    setCheckingDelivery(true);
+    try {
+      const result = await checkDeliveryEligibility(
+        address.pincode,
+        address.city,
+        address.state
+      );
+      setDeliveryDistance(result.distance);
+      if (!result.withinRadius) {
+        return {
+          delivery: `Sorry! Your location is approximately ${result.distance} KM from our store. We currently deliver only within ${MAX_DELIVERY_RADIUS_KM} KM of our store in Akurdi, Pune.`,
+        };
+      }
+      return {};
+    } catch {
+      // If geocoding fails, allow the order (backend will re-check)
+      return {};
+    } finally {
+      setCheckingDelivery(false);
+    }
+  };
 
   // ── Validation ────────────────────────────────────────────────────
   const validateAddress = () => {
@@ -454,9 +484,17 @@ const Checkout = () => {
         return;
       }
       setErrors((prev) => {
-        const { name, phone, email, address1, city, pincode, state, ...rest } = prev;
+        const { name, phone, email, address1, city, pincode, state, delivery, ...rest } = prev;
         return rest;
       });
+
+      // Check delivery radius
+      const deliveryErrors = await validateDeliveryRadius();
+      if (Object.keys(deliveryErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...deliveryErrors }));
+        return;
+      }
+
       setStep(1);
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -540,6 +578,18 @@ const Checkout = () => {
                 <AddressForm data={address} onChange={setAddress} errors={errors} />
               )}
 
+              {step === 0 && (
+                <>
+                  <DeliveryNotice className="mt-5" />
+                  {errors.delivery && (
+                    <div className="mt-4 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                      <span className="text-lg flex-shrink-0">❌</span>
+                      <p className="text-sm font-medium text-red-700">{errors.delivery}</p>
+                    </div>
+                  )}
+                </>
+              )}
+
               {step === 1 && (
                 <>
                   {/* Address summary */}
@@ -579,13 +629,13 @@ const Checkout = () => {
 
               <button
                 onClick={handleNext}
-                disabled={placing}
+                disabled={placing || checkingDelivery}
                 className="mt-6 w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3.5 rounded-xl font-bold text-base hover:bg-blue-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {placing ? (
+                {placing || checkingDelivery ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Placing Order...
+                    {checkingDelivery ? "Checking Delivery Area..." : "Placing Order..."}
                   </>
                 ) : step === 0 ? (
                   <>Continue to Payment <ChevronRight className="w-4 h-4" /></>

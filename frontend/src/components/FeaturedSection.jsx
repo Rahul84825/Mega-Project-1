@@ -109,10 +109,10 @@ const DealsSection = () => {
         />
         
         {/* Countdown Timer */}
-        <div className="flex items-center gap-4 mb-8 bg-white w-fit px-5 py-3 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-8 bg-white w-fit px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl shadow-sm border border-slate-100">
           <div className="flex items-center gap-2 text-slate-600">
-            <Clock className="w-5 h-5 text-red-500 animate-pulse" />
-            <span className="font-bold text-sm uppercase tracking-wide">Ends in:</span>
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 animate-pulse" />
+            <span className="font-bold text-xs sm:text-sm uppercase tracking-wide">Ends in:</span>
           </div>
           <div className="flex items-center gap-2">
             {[pad(timeLeft.h), pad(timeLeft.m), pad(timeLeft.s)].map((val, i) => (
@@ -266,11 +266,11 @@ const WhyChooseUsSection = () => (
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-16">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-12 sm:mb-16">
         {WHY_US.map((item, i) => {
           const Icon = item.icon;
           return (
-            <div key={i} className="flex flex-col items-center text-center p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+            <div key={i} className="flex flex-col items-center text-center p-4 sm:p-6 bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
               <div className={`w-14 h-14 ${item.bg} rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-inner`}>
                 <Icon className={`w-6 h-6 ${item.color}`} />
               </div>
@@ -282,20 +282,20 @@ const WhyChooseUsSection = () => (
       </div>
 
       {/* Modern Stats Banner */}
-      <div className="bg-blue-600 rounded-3xl p-8 sm:p-12 relative overflow-hidden shadow-2xl">
+      <div className="bg-blue-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full opacity-50 blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-700 rounded-full opacity-50 blur-3xl translate-y-1/3 -translate-x-1/3"></div>
         
-        <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-8 divide-x divide-blue-500/30">
+        <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 divide-x-0 sm:divide-x divide-blue-500/30">
           {[
             { value: "2+",     label: "Years in Business"  },
             { value: "500+",   label: "Happy Customers"    },
             { value: "200+",   label: "Products Available" },
             { value: "4.8/5",  label: "Average Rating"     },
           ].map((stat, i) => (
-            <div key={i} className={`text-center ${i % 2 !== 0 && i < 2 ? 'border-l-0 sm:border-l' : ''}`}>
-              <p className="text-4xl sm:text-5xl font-black text-white mb-2 drop-shadow-sm">{stat.value}</p>
-              <p className="text-sm sm:text-base text-blue-100 font-medium tracking-wide">{stat.label}</p>
+            <div key={i} className={`text-center ${i > 0 ? 'border-l-0 sm:border-l border-blue-500/30' : ''}`}>
+              <p className="text-2xl sm:text-4xl md:text-5xl font-black text-white mb-1 sm:mb-2 drop-shadow-sm">{stat.value}</p>
+              <p className="text-xs sm:text-sm md:text-base text-blue-100 font-medium tracking-wide">{stat.label}</p>
             </div>
           ))}
         </div>

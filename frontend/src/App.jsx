@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation }
 import ScrollToTop from "./components/ScrollToTop";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import { DeliveryBanner } from "./components/DeliveryNotice";
 
 // Pages
 import Home from "./pages/Home";
@@ -62,6 +63,7 @@ const StorefrontLayout = () => {
 
   return (
     <>
+      <DeliveryBanner />
       <Navbar cartCount={cartCount} />
       <Outlet />
       {showFooter && <Footer />}

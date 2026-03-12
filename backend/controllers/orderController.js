@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const Order        = require("../models/Order");
 const { sendEmail } = require("../utils/mailer");
+const { checkDeliveryEligibility, MAX_DELIVERY_RADIUS_KM } = require("../utils/delivery");
 
 // ── Send order confirmation email to customer ─────────────────────────────────
 const sendOrderEmail = async (order) => {
@@ -187,6 +188,26 @@ const createOrder = asyncHandler(async (req, res) => {
   if (!customer || !address || !items?.length || !paymentMethod) {
     res.status(400);
     throw new Error("Missing required order fields");
+  }
+
+  // ── Delivery radius safety check ────────────────────────────────
+  try {
+    const deliveryCheck = await checkDeliveryEligibility(
+      address.pincode,
+      address.city,
+      address.state
+    );
+    if (!deliveryCheck.eligible && deliveryCheck.reason === "out_of_range") {
+      res.status(400);
+      throw new Error(
+        `Sorry! Your location is approximately ${deliveryCheck.distance} KM from our store. We currently deliver only within ${MAX_DELIVERY_RADIUS_KM} KM of our store in Akurdi, Pune.`
+      );
+    }
+  } catch (err) {
+    // If already a controlled error (delivery out of range), re-throw
+    if (res.statusCode === 400 && err.message.includes("KM")) throw err;
+    // Otherwise geocoding failed — allow the order through
+    console.warn("Delivery check skipped (geocoding error):", err.message);
   }
 
   const order = await Order.create({
