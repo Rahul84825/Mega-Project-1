@@ -5,7 +5,7 @@ const express    = require("express");
 const cors       = require("cors");
 const connectDB  = require("./config/db");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
-const { transporter, verifyTransporter } = require("./utils/mailer");
+const { sendEmail, verifyEmailService } = require("./utils/emailService");
 
 // Connect to MongoDB
 connectDB();
@@ -35,22 +35,31 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/test-email", async (req, res) => {
-  try {
-    await verifyTransporter();
+  const testRecipient = process.env.EMAIL_USER || process.env.ADMIN_EMAIL;
 
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
+  if (!testRecipient) {
+    return res.status(500).json({
+      success: false,
+      message: "EMAIL_USER or ADMIN_EMAIL must be configured for test emails",
+    });
+  }
+
+  try {
+    await verifyEmailService();
+
+    const info = await sendEmail({
+      to: testRecipient,
       subject: "Render Test",
+      html: "<p>Email working on Render with Resend</p>",
       text: "Email working on Render",
     });
 
-    res.json({ success: true, message: "Email sent", messageId: info.messageId });
+    res.json({ success: true, message: "Email sent", emailId: info?.id || null });
   } catch (err) {
     console.error("/test-email failed:", {
       message: err.message,
-      code: err.code,
-      command: err.command,
+      name: err.name,
+      statusCode: err.statusCode,
     });
     res.status(500).json({ success: false, message: "Email send failed", error: err.message });
   }
