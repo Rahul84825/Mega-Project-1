@@ -34,6 +34,22 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "OK", message: "Mahalaxmi Steels API is running" });
 });
 
+app.get("/test-email", async (req, res) => {
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: "Render Test",
+      text: "Email working on Render"
+    });
+
+    res.send("Email sent");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err.message);
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("Mahalaxmi Steels Backend API Running");
 });
