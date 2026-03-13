@@ -1,11 +1,11 @@
+const dotenv     = require("dotenv");
+dotenv.config(); // Load env vars before anything else reads process.env
+
 const express    = require("express");
 const cors       = require("cors");
-const dotenv     = require("dotenv");
 const connectDB  = require("./config/db");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
-
-// Load env vars
-dotenv.config();
+const { transporter } = require("./utils/mailer");
 
 // Connect to MongoDB
 connectDB();
