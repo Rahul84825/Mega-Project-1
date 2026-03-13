@@ -68,4 +68,21 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+
+  verifyEmailService()
+    .then((status) => {
+      console.log("✅ Email service ready", {
+        provider: status.provider,
+        fromAddress: status.fromAddress,
+      });
+    })
+    .catch((err) => {
+      console.error("❌ Email service configuration error", {
+        message: err.message,
+        name: err.name,
+        hasResendApiKey: Boolean(process.env.RESEND_API_KEY),
+        emailFrom: process.env.EMAIL_FROM || null,
+        stack: err.stack,
+      });
+    });
 });

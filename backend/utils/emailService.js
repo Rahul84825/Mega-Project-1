@@ -3,6 +3,8 @@ const { Resend } = require("resend");
 const DEFAULT_FROM = "Mahalaxmi Steels <onboarding@resend.dev>";
 let resendClient = null;
 
+const getEmailFromAddress = () => process.env.EMAIL_FROM || DEFAULT_FROM;
+
 const getMissingEmailEnvVars = () => {
   const requiredVars = ["RESEND_API_KEY"];
   return requiredVars.filter((name) => !process.env[name]);
@@ -29,9 +31,12 @@ const getResendClient = () => {
 const verifyEmailService = async () => {
   getResendClient();
 
+  const fromAddress = getEmailFromAddress();
+
   return {
     ready: true,
     provider: "resend",
+    fromAddress,
   };
 };
 
@@ -48,9 +53,10 @@ const sendEmail = async ({ to, subject, html, text }) => {
 
   try {
     const resend = getResendClient();
+    const fromAddress = getEmailFromAddress();
 
     const result = await resend.emails.send({
-      from: DEFAULT_FROM,
+      from: fromAddress,
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
@@ -67,6 +73,11 @@ const sendEmail = async ({ to, subject, html, text }) => {
       message: err.message,
       name: err.name,
       statusCode: err.statusCode,
+      to,
+      subject,
+      from: getEmailFromAddress(),
+      hasApiKey: Boolean(process.env.RESEND_API_KEY),
+      stack: err.stack,
     });
     throw err;
   }

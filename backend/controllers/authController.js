@@ -139,7 +139,16 @@ const verifyEmail = asyncHandler(async (req, res) => {
     to:      user.email,
     subject: "Welcome to Mahalaxmi Steels! 🎉",
     html:    welcomeHtml,
-  }).catch(() => {}); // non-blocking, ignore errors
+  }).catch((err) => {
+    console.error("[email] Welcome email failed", {
+      userId: user._id,
+      email: user.email,
+      message: err.message,
+      name: err.name,
+      statusCode: err.statusCode,
+      stack: err.stack,
+    });
+  });
 
   res.json({ message: "Email verified successfully! You can now log in.", success: true });
 });

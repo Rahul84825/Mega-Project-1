@@ -3,6 +3,18 @@ const Order        = require("../models/Order");
 const { sendEmail } = require("../utils/mailer");
 const { checkDeliveryEligibility, MAX_DELIVERY_RADIUS_KM } = require("../utils/delivery");
 
+const logEmailFailure = (context, err, order) => {
+  console.error(`[email] ${context} failed`, {
+    orderId: order?.orderId,
+    customerEmail: order?.customer?.email,
+    adminEmail: process.env.ADMIN_EMAIL || null,
+    message: err.message,
+    name: err.name,
+    statusCode: err.statusCode,
+    stack: err.stack,
+  });
+};
+
 // ── Send order confirmation email to customer ─────────────────────────────────
 const sendOrderEmail = async (order) => {
   const itemRows = order.items.map((i) =>
@@ -219,12 +231,8 @@ const createOrder = asyncHandler(async (req, res) => {
     status: "pending",
   });
 
-  sendOrderEmail(order).catch((err) =>
-    console.error("Customer email failed:", err.message)
-  );
-  sendAdminNotification(order).catch((err) =>
-    console.error("Admin email failed:", err.message)
-  );
+  sendOrderEmail(order).catch((err) => logEmailFailure("Order confirmation email", err, order));
+  sendAdminNotification(order).catch((err) => logEmailFailure("New-order admin notification", err, order));
 
   res.status(201).json(order);
 });
@@ -267,12 +275,8 @@ const markDelivered = asyncHandler(async (req, res) => {
 
   await order.save();
 
-  sendDeliveryEmail(order).catch((err) =>
-    console.error("Delivery customer email failed:", err.message)
-  );
-  sendAdminDeliveryNotification(order).catch((err) =>
-    console.error("Delivery admin email failed:", err.message)
-  );
+  sendDeliveryEmail(order).catch((err) => logEmailFailure("Delivery confirmation email", err, order));
+  sendAdminDeliveryNotification(order).catch((err) => logEmailFailure("Delivery admin notification", err, order));
 
   res.json({ message: "Order marked as delivered", order });
 });
