@@ -14,14 +14,22 @@ const assertEmailConfig = () => {
 
 // ── Reusable transporter (created once, shared across the app) ───────────────
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  connectionTimeout: Number(process.env.EMAIL_CONNECTION_TIMEOUT || 15000),
-  greetingTimeout:   Number(process.env.EMAIL_GREETING_TIMEOUT || 10000),
-  socketTimeout:     Number(process.env.EMAIL_SOCKET_TIMEOUT || 20000),
+  tls: {
+    rejectUnauthorized: false,
+  },
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 20000,
 });
 
 const verifyTransporter = async () => {
