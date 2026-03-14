@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Order        = require("../models/Order");
 const { sendEmail } = require("../utils/mailer");
 const { checkDeliveryEligibility, MAX_DELIVERY_RADIUS_KM } = require("../utils/delivery");
+const { getIO } = require("../socket");
 
 const logEmailFailure = (context, err, order) => {
   console.error(`[email] ${context} failed`, {
@@ -230,6 +231,17 @@ const createOrder = asyncHandler(async (req, res) => {
     subtotal, delivery, total, itemCount,
     status: "pending",
   });
+
+  try {
+    const io = getIO();
+    io.emit("newOrder", order);
+  } catch (err) {
+    console.error("Failed to emit realtime order event:", {
+      orderId: order?.orderId,
+      message: err.message,
+      stack: err.stack,
+    });
+  }
 
   sendOrderEmail(order).catch((err) => logEmailFailure("Order confirmation email", err, order));
   sendAdminNotification(order).catch((err) => logEmailFailure("New-order admin notification", err, order));

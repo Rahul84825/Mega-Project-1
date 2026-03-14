@@ -98,13 +98,6 @@ const verifyTransporter = async (smtpTransporter, contextLabel) => {
         reject(error);
         return;
       }
-
-      console.log("SMTP server ready", {
-        context: contextLabel,
-        host: activeTransportConfig?.host || getConfiguredHost(),
-        port: activeTransportConfig?.port || getConfiguredPort(),
-        success: Boolean(success),
-      });
       verifiedTransportSignature = getTransportSignature();
       resolve(success);
     });
