@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, PlusCircle, Tag,
   ShoppingBag, Store, LogOut, ChevronLeft, Menu, Percent,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { io } from "socket.io-client";
+
+const SOCKET_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/api\/?$/, "");
 
 const NAV_ITEMS = [
   { to: "/admin",            label: "Dashboard",   icon: LayoutDashboard, end: true },
@@ -20,7 +23,61 @@ const AdminLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const orderSoundRef = useRef(null);
+
+  // ── Global new-order notification sound (all admin pages) ──────────────────
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+
+    // Single reusable Audio instance — no duplicate sounds
+    const sound = new Audio("/sounds/new-order.mp3");
+    sound.loop = true;
+    orderSoundRef.current = sound;
+
+    const stopSound = () => {
+      if (!sound.paused) {
+        sound.pause();
+        sound.currentTime = 0;
+      }
+    };
+
+    // Stop looping sound when admin returns to the tab
+    const handleVisibilityChange = () => {
+      if (!document.hidden) stopSound();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+      reconnection: true,
+    });
+
+    socket.on("newOrder", () => {
+      // If the admin tab is hidden, loop the sound until they return
+      if (document.hidden) {
+        sound.currentTime = 0;
+        sound.loop = true;
+        sound.play().catch(() => {});
+      } else {
+        // Tab is active — play once so the admin hears it immediately
+        sound.loop = false;
+        sound.currentTime = 0;
+        sound.play().catch(() => {});
+      }
+    });
+
+    socket.on("connect_error", (err) => {
+      console.warn("[AdminLayout] Notification socket error:", err.message);
+    });
+
+    return () => {
+      stopSound();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      socket.disconnect();
+    };
+  }, [user?.role]);
 
   // Custom active check so /admin/products/add doesn't highlight "Products"
   const isActive = (item) => {

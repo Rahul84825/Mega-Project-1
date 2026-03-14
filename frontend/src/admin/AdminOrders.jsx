@@ -245,32 +245,6 @@ const AdminOrders = () => {
       reconnection: true,
     });
 
-    const playFallbackTone = () => {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
-
-      const audioContext = new AudioContextClass();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.type = "sine";
-      oscillator.frequency.value = 880;
-      gainNode.gain.value = 0.08;
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.2);
-    };
-
-    const playNotificationSound = () => {
-      const audio = new Audio("/sounds/new-order.mp3");
-      audio.play().catch((err) => {
-        console.error("Failed to play new-order.mp3 notification:", err.message);
-        playFallbackTone();
-      });
-    };
 
     socket.on("newOrder", (incomingOrder) => {
       if (!incomingOrder) return;
@@ -281,8 +255,6 @@ const AdminOrders = () => {
       if (!orderKey || !isNew) {
         return;
       }
-
-      playNotificationSound();
 
       setHighlightedOrderIds((prev) => ({ ...prev, [orderKey]: true }));
 
