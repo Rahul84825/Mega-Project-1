@@ -10,6 +10,28 @@ const FALLBACK_OFFERS = [
 
 const ProductContext = createContext(null);
 
+const getOrderKey = (order) => order?._id || order?.id || order?.orderId || null;
+
+const upsertOrderAtTop = (list, incoming) => {
+  const nextList = Array.isArray(list) ? list : [];
+  const incomingKey = getOrderKey(incoming);
+
+  if (!incomingKey) {
+    return { list: [incoming, ...nextList], isNew: true };
+  }
+
+  const existingIndex = nextList.findIndex((o) => getOrderKey(o) === incomingKey);
+  const existing = existingIndex >= 0 ? nextList[existingIndex] : null;
+  const mergedOrder = existing ? { ...existing, ...incoming } : incoming;
+  const filtered = nextList.filter((o) => getOrderKey(o) !== incomingKey);
+
+  return {
+    list: [mergedOrder, ...filtered],
+    isNew: existingIndex === -1,
+    order: mergedOrder,
+  };
+};
+
 export const ProductProvider = ({ children }) => {
   const [products,   setProducts]   = useState([]);
   const [offers,     setOffers]     = useState([]);
@@ -180,8 +202,23 @@ export const ProductProvider = ({ children }) => {
 
     const data = await api.post("/api/orders", payload, token());
     const newOrder = data.order || data;
-    setOrders((prev) => [newOrder, ...prev]);
+    setOrders((prev) => upsertOrderAtTop(prev, newOrder).list);
     return newOrder;
+  };
+
+  const addIncomingOrder = (incomingOrder) => {
+    let result = { order: incomingOrder, isNew: true };
+
+    setOrders((prev) => {
+      const updated = upsertOrderAtTop(prev, incomingOrder);
+      result = {
+        order: updated.order || incomingOrder,
+        isNew: updated.isNew,
+      };
+      return updated.list;
+    });
+
+    return result;
   };
 
   // ── Submit UPI Transaction ID ─────────────────────────────────────
@@ -224,7 +261,7 @@ export const ProductProvider = ({ children }) => {
       addProduct, updateProduct, deleteProduct, toggleStock,
       addOffer,   updateOffer,  deleteOffer,  toggleOffer,
       addCategory, updateCategory, deleteCategory,
-      fetchOrders, placeOrder, markOrderDelivered, markOrderPaid, submitUpiTxnId,
+      fetchOrders, placeOrder, markOrderDelivered, markOrderPaid, submitUpiTxnId, addIncomingOrder,
     }}>
       {children}
     </ProductContext.Provider>

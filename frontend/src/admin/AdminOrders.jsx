@@ -1,6 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Eye, X, Package, User, MapPin, CreditCard, ShoppingBag, CheckCircle2, Loader2, DollarSign } from "lucide-react";
+import { io } from "socket.io-client";
 import { useProducts } from "../context/ProductContext";
+import { useAuth } from "../context/AuthContext";
+
+const SOCKET_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/api\/?$/, "");
 
 const PAYMENT_LABEL = {
   cod: "Cash on Delivery", upi: "UPI", card: "Card",
@@ -164,7 +168,7 @@ const OrderModal = ({ order, onClose, onMarkDelivered, onMarkPaid, delivering, m
           {/* Delivery info if already delivered */}
           {isDelivered && order.deliveredAt && (
             <div className="bg-green-50 border border-green-100 rounded-xl p-4 flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
               <div>
                 <p className="text-sm font-bold text-green-800">Order Delivered</p>
                 <p className="text-xs text-green-600 mt-0.5">
@@ -214,13 +218,98 @@ const OrderModal = ({ order, onClose, onMarkDelivered, onMarkPaid, delivering, m
 
 // ── Main AdminOrders ──────────────────────────────────────────────────────────
 const AdminOrders = () => {
-  const { orders, fetchOrders, markOrderDelivered, markOrderPaid } = useProducts();
+  const { orders, fetchOrders, markOrderDelivered, markOrderPaid, addIncomingOrder } = useProducts();
+  const { user } = useAuth();
   const [search,     setSearch]     = useState("");
   const [selected,   setSelected]   = useState(null);
   const [delivering, setDelivering] = useState(null);
   const [markingPaid, setMarkingPaid] = useState(null);
+  const [highlightedOrderIds, setHighlightedOrderIds] = useState({});
+  const addIncomingOrderRef = useRef(addIncomingOrder);
+  const highlightTimeoutsRef = useRef({});
 
   useEffect(() => { fetchOrders(); }, []);
+
+  useEffect(() => {
+    addIncomingOrderRef.current = addIncomingOrder;
+  }, [addIncomingOrder]);
+
+  useEffect(() => {
+    if (!user || user.role !== "admin") {
+      return undefined;
+    }
+
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+      reconnection: true,
+    });
+
+    const playFallbackTone = () => {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      const audioContext = new AudioContextClass();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.value = 880;
+      gainNode.gain.value = 0.08;
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.2);
+    };
+
+    const playNotificationSound = () => {
+      const audio = new Audio("/sounds/new-order.mp3");
+      audio.play().catch((err) => {
+        console.error("Failed to play new-order.mp3 notification:", err.message);
+        playFallbackTone();
+      });
+    };
+
+    socket.on("newOrder", (incomingOrder) => {
+      if (!incomingOrder) return;
+
+      const { order, isNew } = addIncomingOrderRef.current(incomingOrder);
+      const orderKey = order?._id || order?.id || order?.orderId;
+
+      if (!orderKey || !isNew) {
+        return;
+      }
+
+      playNotificationSound();
+
+      setHighlightedOrderIds((prev) => ({ ...prev, [orderKey]: true }));
+
+      if (highlightTimeoutsRef.current[orderKey]) {
+        clearTimeout(highlightTimeoutsRef.current[orderKey]);
+      }
+
+      highlightTimeoutsRef.current[orderKey] = setTimeout(() => {
+        setHighlightedOrderIds((prev) => {
+          const next = { ...prev };
+          delete next[orderKey];
+          return next;
+        });
+        delete highlightTimeoutsRef.current[orderKey];
+      }, 5000);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("Realtime order socket connection error:", err.message);
+    });
+
+    return () => {
+      Object.values(highlightTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId));
+      highlightTimeoutsRef.current = {};
+      socket.disconnect();
+    };
+  }, [user?.role]);
 
   const handleMarkDelivered = async (orderId) => {
     if (delivering) return;
@@ -323,8 +412,13 @@ const AdminOrders = () => {
                 {filtered.map((order) => {
                   const isDelivered  = order.status === "delivered";
                   const isDelivering = delivering === (order._id || order.id);
+                  const orderKey = order._id || order.id || order.orderId;
+                  const isHighlighted = Boolean(highlightedOrderIds[orderKey]);
                   return (
-                    <tr key={order._id || order.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={order._id || order.id}
+                      className={`${isHighlighted ? "bg-emerald-50 animate-pulse" : "hover:bg-gray-50"} transition-colors`}
+                    >
                       <td className="px-4 py-3">
                         <span className="font-bold text-blue-600">#{order.orderId || order._id || order.id}</span>
                       </td>
