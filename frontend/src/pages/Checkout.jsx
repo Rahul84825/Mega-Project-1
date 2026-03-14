@@ -226,11 +226,9 @@ const OrderSummary = ({ cartItems, cartTotal, codFee = 0 }) => {
 };
 
 // ── Order Confirmation ────────────────────────────────────────────────────────
-const OrderConfirmation = ({ orderId, dbOrderId, address = {}, paymentMethod = "", cartTotal = 0, onSubmitUpiTxn }) => {
-  const safeCartTotal = toNumber(cartTotal);
-  const delivery = safeCartTotal >= 999 ? 0 : 79;
-  const codFee = paymentMethod === "cod" ? 50 : 0;
-  const total = safeCartTotal + delivery + codFee;
+const OrderConfirmation = ({ orderId, dbOrderId, address = {}, paymentMethod = "", totalAmount = 0, onSubmitUpiTxn }) => {
+  // Use the total already calculated by checkout and stored in the order — do NOT recalculate.
+  const total = toNumber(totalAmount);
 
   const [upiTxnId, setUpiTxnId]     = useState("");
   const [txnSubmitted, setTxnSubmitted] = useState(false);
@@ -566,7 +564,7 @@ const Checkout = () => {
             dbOrderId={confirmedDbOrderId}
             address={address}
             paymentMethod={confirmedPaymentMethod || paymentMethod}
-            cartTotal={confirmedCartTotal}
+            totalAmount={confirmedCartTotal}
             onSubmitUpiTxn={submitUpiTxnId}
           />
         ) : (
