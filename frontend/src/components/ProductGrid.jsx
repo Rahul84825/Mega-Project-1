@@ -29,7 +29,7 @@ const ProductCardSkeleton = () => (
 
 const EmptyState = ({ onClear, isSearch, query }) => (
   <div className="col-span-full flex flex-col items-center justify-center min-h-[50vh] py-12 px-4">
-    <div className="bg-white p-10 sm:p-14 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center text-center max-w-lg w-full">
+    <div className="bg-white p-10 sm:p-14 rounded-4xl border border-slate-100 shadow-sm flex flex-col items-center text-center max-w-lg w-full">
       <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
         <PackageX className="w-12 h-12 text-slate-400" />
       </div>

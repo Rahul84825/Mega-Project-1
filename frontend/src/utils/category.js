@@ -42,6 +42,7 @@ export const getCategorySlug = (category, categories = []) => {
 
 export const isCategoryMatch = (productCategory, selectedCategory, categories = []) => {
   if (!selectedCategory || selectedCategory === "all") return true;
+  if (!productCategory) return false;
 
   const selected = String(selectedCategory).toLowerCase();
 

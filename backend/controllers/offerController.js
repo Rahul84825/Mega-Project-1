@@ -1,5 +1,20 @@
 const asyncHandler = require("express-async-handler");
 const Offer        = require("../models/Offer");
+const mongoose     = require("mongoose");
+
+const normalizeOptionalObjectId = (value) => {
+  if (value === undefined || value === null) return undefined;
+  const normalized = String(value).trim();
+  if (!normalized || normalized.toLowerCase() === "null" || normalized.toLowerCase() === "none") {
+    return undefined;
+  }
+  if (!mongoose.Types.ObjectId.isValid(normalized)) {
+    const err = new Error("Invalid linked_product_id");
+    err.statusCode = 400;
+    throw err;
+  }
+  return normalized;
+};
 
 const normalizeOfferPayload = (body = {}) => {
   const linkedCategory = body.linked_category ?? body.targetCategory ?? body.category ?? "";
@@ -12,7 +27,7 @@ const normalizeOfferPayload = (body = {}) => {
     description: body.description ?? body.subtitle ?? "",
     banner_image: body.banner_image ?? body.image ?? "",
     discount_percentage: Number.isNaN(discountPercentage) ? 0 : discountPercentage,
-    linked_product_id: body.linked_product_id ?? body.targetProduct ?? null,
+    linked_product_id: normalizeOptionalObjectId(body.linked_product_id ?? body.targetProduct),
     linked_category: linkedCategory,
     is_active:
       body.is_active !== undefined
@@ -42,7 +57,9 @@ const createOffer  = asyncHandler(async (req, res) => {
   if (!title) { res.status(400); throw new Error("title is required"); }
 
   const offer = await Offer.create(normalizeOfferPayload(req.body));
-  res.status(201).json(offer);
+  const populated = await Offer.findById(offer._id)
+    .populate("linked_product_id", "name image images price mrp category");
+  res.status(201).json(populated);
 });
 
 const updateOffer  = asyncHandler(async (req, res) => {
@@ -84,7 +101,9 @@ const updateOffer  = asyncHandler(async (req, res) => {
   }
 
   const updated = await offer.save();
-  res.json(updated);
+  const populated = await Offer.findById(updated._id)
+    .populate("linked_product_id", "name image images price mrp category");
+  res.json(populated);
 });
 
 const deleteOffer  = asyncHandler(async (req, res) => {
