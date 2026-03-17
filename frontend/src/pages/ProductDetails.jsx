@@ -124,7 +124,6 @@ const ProductDetails = () => {
           <div className="flex flex-col gap-3">
             <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden aspect-square flex items-center justify-center group">
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-                {(product.isNew || product.featured) && <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">{product.isNew ? "NEW" : "FEATURED"}</span>}
                 {discount > 0 && <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">-{discount}%</span>}
                 {!product.inStock && <span className="bg-gray-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">Sold Out</span>}
               </div>

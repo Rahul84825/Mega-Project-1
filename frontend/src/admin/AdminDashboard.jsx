@@ -52,9 +52,11 @@ const AdminDashboard = () => {
   const totalProducts = products.length;
   const inStock       = products.filter((p) => p.inStock).length;
   const outOfStock    = products.filter((p) => !p.inStock).length;
-  const newProducts   = products.filter((p) => p.isNew).length;
-    const featuredCount = products.filter((p) => p.featured).length;
-    const bestsellerCount = products.filter((p) => p.bestseller).length;
+  const recentThreshold = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const recentlyAdded = products.filter((p) => {
+    const created = new Date(p.createdAt || p.created_at || 0).getTime();
+    return Number.isFinite(created) && created >= recentThreshold;
+  }).length;
   const activeOffers  = offers.filter((o) => o.active).length;
   const totalOrders   = orders.length;
   const totalRevenue  = orders.reduce((s, o) => s + (o.total || 0), 0);
@@ -108,7 +110,7 @@ const AdminDashboard = () => {
         <StatCard label="Total Orders" value={totalOrders} sub="Awaiting processing or completed"
           icon={ShoppingBag} color="text-blue-600" bg="bg-blue-50"
           onClick={() => navigate("/admin/orders")} />
-        <StatCard label="Total Products" value={totalProducts} sub={`${newProducts} recently added items`}
+        <StatCard label="Total Products" value={totalProducts} sub={`${recentlyAdded} added in last 30 days`}
           icon={Package} color="text-indigo-600" bg="bg-indigo-50"
           onClick={() => navigate("/admin/products")} />
           
@@ -123,8 +125,8 @@ const AdminDashboard = () => {
           onClick={() => navigate("/admin/offers")} />
         <StatCard label="Registered Users" value={adminStats.totalUsers ?? "—"} sub="Total customer accounts"
           icon={Users} color="text-violet-600" bg="bg-violet-50" />
-        <StatCard label="Featured Products" value={featuredCount} sub={`${bestsellerCount} marked as bestseller`}
-          icon={TrendingUp} color="text-amber-600" bg="bg-amber-50"
+        <StatCard label="Recently Added" value={recentlyAdded} sub="Products added in last 30 days"
+          icon={Package} color="text-amber-600" bg="bg-amber-50"
           onClick={() => navigate("/admin/products")} />
       </div>
 

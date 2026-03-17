@@ -57,7 +57,7 @@ const getProductById = asyncHandler(async (req, res) => {
 
 // ── POST /api/products (admin) ────────────────────────────────────────────────
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, description, category, category_id, price, originalPrice, inStock, isNew, specifications } = req.body;
+  const { name, description, category, category_id, price, originalPrice, inStock, specifications } = req.body;
   const resolvedCategoryId = category_id || category;
 
   if (!name || !resolvedCategoryId || !price || !originalPrice) {
@@ -83,19 +83,6 @@ const createProduct = asyncHandler(async (req, res) => {
     image:  primaryImage,
     images,
     inStock:  inStock  !== undefined ? inStock  : true,
-    is_new: req.body.is_new !== undefined ? !!req.body.is_new : isNew !== undefined ? !!isNew : false,
-    is_featured:
-      req.body.is_featured !== undefined
-        ? !!req.body.is_featured
-        : req.body.featured !== undefined
-          ? !!req.body.featured
-          : false,
-    is_bestseller:
-      req.body.is_bestseller !== undefined
-        ? !!req.body.is_bestseller
-        : req.body.bestseller !== undefined
-          ? !!req.body.bestseller
-          : false,
     brand:    req.body.brand || "",
     stock:    req.body.stock !== undefined ? +req.body.stock : 0,
     tags:     req.body.tags  || [],
@@ -111,7 +98,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (!product) { res.status(404); throw new Error("Product not found"); }
 
   const fields = ["name","description","price","originalPrice","mrp",
-                  "image","images","inStock","brand","stock","tags","specifications","is_featured","is_bestseller","is_new"];
+                  "image","images","inStock","brand","stock","tags","specifications"];
   fields.forEach((f) => { if (req.body[f] !== undefined) product[f] = req.body[f]; });
 
   if (req.body.category_id !== undefined || req.body.category !== undefined) {
@@ -123,10 +110,6 @@ const updateProduct = asyncHandler(async (req, res) => {
     }
     product.category_id = nextCategoryId;
   }
-
-  if (req.body.featured !== undefined) product.is_featured = !!req.body.featured;
-  if (req.body.bestseller !== undefined) product.is_bestseller = !!req.body.bestseller;
-  if (req.body.isNew !== undefined) product.is_new = !!req.body.isNew;
 
   if (req.body.image !== undefined || req.body.images !== undefined) {
     const normalizedImages = normalizeImageArray(
@@ -156,34 +139,7 @@ const toggleStock = asyncHandler(async (req, res) => {
   if (!product) { res.status(404); throw new Error("Product not found"); }
   product.inStock = !product.inStock;
   await product.save();
-  res.json({ inStock: product.inStock });
+  res.json({ product: { _id: product._id, inStock: product.inStock } });
 });
 
-// ── PATCH /api/products/:id/featured (admin) ──────────────────────────────────
-const toggleFeatured = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-  if (!product) { res.status(404); throw new Error("Product not found"); }
-  product.is_featured = !product.is_featured;
-  await product.save();
-  res.json({ featured: product.is_featured, is_featured: product.is_featured, _id: product._id });
-});
-
-// ── PATCH /api/products/:id/bestseller (admin) ────────────────────────────────
-const toggleBestseller = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-  if (!product) { res.status(404); throw new Error("Product not found"); }
-  product.is_bestseller = !product.is_bestseller;
-  await product.save();
-  res.json({ bestseller: product.is_bestseller, is_bestseller: product.is_bestseller, _id: product._id });
-});
-
-// ── PATCH /api/products/:id/isnew (admin) ────────────────────────────────────
-const toggleIsNew = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-  if (!product) { res.status(404); throw new Error("Product not found"); }
-  product.is_new = !product.is_new;
-  await product.save();
-  res.json({ isNew: product.is_new, is_new: product.is_new, _id: product._id });
-});
-
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct, toggleStock, toggleFeatured, toggleBestseller, toggleIsNew };
+module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct, toggleStock };

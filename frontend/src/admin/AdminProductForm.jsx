@@ -7,7 +7,7 @@ import { api } from "../utils/api";
 const EMPTY_FORM = {
   name: "", category: "", price: "", mrp: "",
   description: "", image: "", images: [], inStock: true,
-  featured: false, bestseller: false, isNew: false, brand: "", stock: "", tags: "",
+  brand: "", stock: "", tags: "",
 };
 
 const AdminProductForm = ({ mode = "add" }) => {
@@ -40,9 +40,6 @@ const AdminProductForm = ({ mode = "add" }) => {
           image:       product.image || product.images?.[0] || "",
           images:      product.images?.length ? product.images : (product.image ? [product.image] : []),
           inStock:     product.inStock     ?? true,
-          featured:    product.featured    ?? false,
-          bestseller:  product.bestseller  ?? false,
-          isNew:       product.isNew       ?? false,
           brand:       product.brand       || "",
           stock:       product.stock       || "",
           tags:        (product.tags || []).join(", "),
@@ -150,10 +147,7 @@ const AdminProductForm = ({ mode = "add" }) => {
       tags:          (form.tags || "").split(",").map((t) => t.trim()).filter(Boolean),
       image:         (form.images || [])[0] || "",
       images:        form.images || [],
-      inStock:  form.inStock,
-      featured:    form.featured,
-      bestseller:  form.bestseller,
-      isNew:       form.isNew,
+      inStock:      form.inStock,
     };
 
     setSubmitting(true);
@@ -349,25 +343,18 @@ const AdminProductForm = ({ mode = "add" }) => {
           </div>
         </div>
 
-        {/* ── Toggles ── */}
-        <div className="flex flex-col sm:flex-row gap-6 pt-4 border-t border-slate-100">
-          {[
-            { key: "inStock", label: "In Stock Status", desc: "Available for purchase", color: "peer-checked:bg-emerald-500" },
-            { key: "featured", label: "Featured Product", desc: "Highlight on homepage", color: "peer-checked:bg-blue-600" },
-            { key: "bestseller", label: "Bestseller", desc: "Show bestseller badge", color: "peer-checked:bg-orange-500" },
-            { key: "isNew", label: "New Arrival", desc: "Show new arrival badge", color: "peer-checked:bg-indigo-500" },
-          ].map(({ key, label, desc, color }) => (
-            <div key={key} className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto p-3 rounded-xl border border-slate-200 bg-slate-50/50">
-              <div>
-                <p className="text-sm font-bold text-slate-900">{label}</p>
-                <p className="text-[11px] font-medium text-slate-500">{desc}</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer ml-auto">
-                <input type="checkbox" className="sr-only peer" checked={form[key]} onChange={() => set(key, !form[key])} />
-                <div className={`w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${color}`}></div>
-              </label>
+        {/* ── Stock Toggle ── */}
+        <div className="flex flex-col gap-6 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between gap-4 w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+            <div>
+              <p className="text-sm font-bold text-slate-900">In Stock Status</p>
+              <p className="text-[11px] font-medium text-slate-500">Available for purchase</p>
             </div>
-          ))}
+            <label className="relative inline-flex items-center cursor-pointer ml-auto">
+              <input type="checkbox" className="sr-only peer" checked={form.inStock} onChange={() => set("inStock", !form.inStock)} />
+              <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
         </div>
 
         {/* ── Submit ── */}

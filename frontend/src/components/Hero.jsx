@@ -104,7 +104,7 @@ const Hero = memo(() => {
             </div>
           </div>
 
-          {/* ── Right Content (Hero Featured Card) ── */}
+          {/* ── Right Content (Hero Promo Card) ── */}
           <div className="relative lg:mt-0 flex justify-center items-center px-2 sm:px-4 lg:px-0">
             {/* Soft backdrop blur for the card to sit on */}
             <div className="absolute inset-0 bg-linear-to-tr from-blue-100/50 to-transparent rounded-full blur-3xl scale-90"></div>
@@ -119,7 +119,7 @@ const Hero = memo(() => {
 
                 <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 flex flex-col gap-1.5 sm:gap-2 z-10 items-start">
                   <span className="bg-blue-600/95 text-white text-[9px] sm:text-[10px] font-extrabold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full tracking-wider uppercase shadow-sm">
-                    Featured
+                    Popular
                   </span>
                   <span className="bg-rose-500/95 text-white text-[9px] sm:text-[10px] font-extrabold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full tracking-wider shadow-sm">
                     15% OFF

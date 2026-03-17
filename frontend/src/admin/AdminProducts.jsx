@@ -8,14 +8,11 @@ import {
   ToggleLeft,
   ToggleRight,
   Package,
-  Star,
-  Sparkles,
-  BadgeCheck,
 } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 
 const AdminProducts = () => {
-  const { products, categories, deleteProduct, toggleStock, toggleFeatured, toggleBestseller, toggleIsNew } = useProducts();
+  const { products, categories, deleteProduct, toggleStock } = useProducts();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
@@ -43,13 +40,6 @@ const AdminProducts = () => {
   const handleDelete = async (id) => {
     await deleteProduct(id);
     setDeleteConfirm(null);
-  };
-
-  const badgeClass = (active, tone) => {
-    if (active && tone === "featured") return "bg-amber-50 text-amber-700 border-amber-300";
-    if (active && tone === "bestseller") return "bg-orange-50 text-orange-700 border-orange-300";
-    if (active && tone === "new") return "bg-blue-50 text-blue-700 border-blue-300";
-    return "bg-white text-slate-400 border-slate-200 hover:text-slate-700";
   };
 
   return (
@@ -103,14 +93,13 @@ const AdminProducts = () => {
                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Category</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Price</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Stock</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Visibility</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={5}>
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <Package className="w-10 h-10 text-slate-300 mb-3" />
                       <p className="text-sm font-bold text-slate-700 mb-1">No products found</p>
@@ -122,9 +111,6 @@ const AdminProducts = () => {
                 filtered.map((product) => {
                   const id = getId(product);
                   const preview = product.image || product.images?.[0] || "";
-                  const featured = product.is_featured ?? product.featured;
-                  const bestseller = product.is_bestseller ?? product.bestseller;
-                  const isNew = product.is_new ?? product.isNew;
 
                   return (
                     <tr key={id} className="hover:bg-blue-50/40 transition-colors group">
@@ -169,32 +155,6 @@ const AdminProducts = () => {
                           {product.inStock ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
                           {product.inStock ? "In Stock" : "Out of Stock"}
                         </button>
-                      </td>
-
-                      <td className="px-6 py-3">
-                        <div className="flex gap-1.5 flex-wrap">
-                          <button
-                            onClick={() => toggleFeatured(id)}
-                            className={`flex items-center gap-1 px-2 py-0.5 border text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors ${badgeClass(featured, "featured")}`}
-                            title="Toggle featured"
-                          >
-                            <Star className="w-3 h-3" /> Featured
-                          </button>
-                          <button
-                            onClick={() => toggleBestseller(id)}
-                            className={`flex items-center gap-1 px-2 py-0.5 border text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors ${badgeClass(bestseller, "bestseller")}`}
-                            title="Toggle bestseller"
-                          >
-                            <BadgeCheck className="w-3 h-3" /> Bestseller
-                          </button>
-                          <button
-                            onClick={() => toggleIsNew(id)}
-                            className={`flex items-center gap-1 px-2 py-0.5 border text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors ${badgeClass(isNew, "new")}`}
-                            title="Toggle new"
-                          >
-                            <Sparkles className="w-3 h-3" /> New
-                          </button>
-                        </div>
                       </td>
 
                       <td className="px-6 py-3 text-right">

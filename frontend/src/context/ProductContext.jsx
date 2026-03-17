@@ -6,9 +6,6 @@ import { useSound } from "./SoundContext";
 const normalizeProduct = (p = {}) => {
   const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
   const image = p.image || images[0] || "";
-  const isFeatured = p.is_featured ?? p.featured ?? false;
-  const isBestseller = p.is_bestseller ?? p.bestseller ?? false;
-  const isNew = p.is_new ?? p.isNew ?? false;
   const categoryValue = p.category || p.category_id || null;
 
   return {
@@ -17,12 +14,6 @@ const normalizeProduct = (p = {}) => {
     images: image && !images.includes(image) ? [image, ...images] : images,
     category: categoryValue,
     category_id: p.category_id || categoryValue,
-    is_featured: !!isFeatured,
-    is_bestseller: !!isBestseller,
-    is_new: !!isNew,
-    featured: !!isFeatured,
-    bestseller: !!isBestseller,
-    isNew: !!isNew,
   };
 };
 
@@ -205,21 +196,6 @@ export const ProductProvider = ({ children }) => {
     const data = await api.patch(`/api/products/${id}/stock`, {}, token());
     const updated = data.product || data;
     setProducts((prev) => prev.map((p) => (p._id || p.id) === id ? normalizeProduct({ ...p, ...updated }) : p));
-  };
-
-  const toggleFeatured = async (id) => {
-    const data = await api.patch(`/api/products/${id}/featured`, {}, token());
-    setProducts((prev) => prev.map((p) => (p._id || p.id) === id ? normalizeProduct({ ...p, is_featured: data.is_featured ?? data.featured }) : p));
-  };
-
-  const toggleBestseller = async (id) => {
-    const data = await api.patch(`/api/products/${id}/bestseller`, {}, token());
-    setProducts((prev) => prev.map((p) => (p._id || p.id) === id ? normalizeProduct({ ...p, is_bestseller: data.is_bestseller ?? data.bestseller }) : p));
-  };
-
-  const toggleIsNew = async (id) => {
-    const data = await api.patch(`/api/products/${id}/isnew`, {}, token());
-    setProducts((prev) => prev.map((p) => (p._id || p.id) === id ? normalizeProduct({ ...p, is_new: data.is_new ?? data.isNew }) : p));
   };
 
   // ── Offer CRUD ────────────────────────────────────────────────────
@@ -436,7 +412,6 @@ export const ProductProvider = ({ children }) => {
     recentlyViewed, wishlist, recentlyViewedProducts, wishlistProducts,
     loading, error, refresh,
     addProduct, updateProduct, deleteProduct, toggleStock,
-    toggleFeatured, toggleBestseller, toggleIsNew,
     addOffer, updateOffer, deleteOffer, toggleOffer,
     addCategory, updateCategory, deleteCategory, toggleCategory,
     markProductViewed, clearRecentlyViewed, toggleWishlist,

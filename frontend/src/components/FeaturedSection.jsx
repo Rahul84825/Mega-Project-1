@@ -130,11 +130,9 @@ const DynamicFeaturedProducts = () => {
   const navigate = useNavigate();
   const { products } = useProducts();
 
-  const featured = (products || []).filter((p) => p.is_featured ?? p.featured);
-  const fallback = (products || []).filter((p) => (p.is_bestseller ?? p.bestseller) || (p.is_new ?? p.isNew));
-
-  const list = (featured.length ? featured : fallback)
+  const list = [...(products || [])]
     .filter((p) => p.inStock)
+    .sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0))
     .slice(0, 8);
 
   if (!list.length) return null;
@@ -143,9 +141,9 @@ const DynamicFeaturedProducts = () => {
     <section className="py-14 sm:py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionTitle
-          eyebrow={featured.length ? "Featured Picks" : "Trending Picks"}
-          title={featured.length ? "Featured Collection" : "Bestsellers & New Arrivals"}
-          subtitle={featured.length ? "This section is fully admin-driven using Featured toggles." : "No featured products were marked, so we are showing bestseller/new fallback automatically."}
+          eyebrow="Latest Picks"
+          title="Newly Added Products"
+          subtitle="This section updates automatically from the latest in-stock products."
           cta="View All Products"
           onCta={() => navigate("/products")}
         />
@@ -158,7 +156,7 @@ const DynamicFeaturedProducts = () => {
 
         <div className="mt-8 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-800 text-sm font-semibold">
           <TrendingUp className="w-4 h-4" />
-          Real-time visibility updates from admin panel toggles
+          Automatically sorted by newest products
         </div>
       </div>
     </section>

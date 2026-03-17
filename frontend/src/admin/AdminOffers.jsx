@@ -16,7 +16,7 @@ import { api } from "../utils/api";
 const OFFER_TYPES = [
   { id: "banner", label: "Banner Promotion" },
   { id: "category", label: "Category Offer" },
-  { id: "product", label: "Featured Product Offer" },
+  { id: "product", label: "Product Offer" },
 ];
 
 const BG_OPTIONS = [

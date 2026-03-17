@@ -11,9 +11,6 @@ const productSchema = new mongoose.Schema(
     image:         { type: String, default: "" },
     images:        { type: [String], default: [] },
     inStock:       { type: Boolean, default: true },
-    is_featured:   { type: Boolean, default: false },
-    is_bestseller: { type: Boolean, default: false },
-    is_new:        { type: Boolean, default: false },
     brand:         { type: String, default: "" },
     stock:         { type: Number, default: 0 },
     tags:          [{ type: String }],
@@ -36,19 +33,6 @@ productSchema.pre("save", function (next) {
   }
   next();
 });
-
-// Backward-compatible aliases used by existing frontend/admin code.
-productSchema.virtual("featured")
-  .get(function () { return this.is_featured; })
-  .set(function (value) { this.is_featured = !!value; });
-
-productSchema.virtual("bestseller")
-  .get(function () { return this.is_bestseller; })
-  .set(function (value) { this.is_bestseller = !!value; });
-
-productSchema.virtual("isNew")
-  .get(function () { return this.is_new; })
-  .set(function (value) { this.is_new = !!value; });
 
 productSchema.virtual("category")
   .get(function () { return this.category_id; })

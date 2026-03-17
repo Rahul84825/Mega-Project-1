@@ -22,9 +22,6 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
     : 0;
 
   const badges = [];
-  if (product.isNew) badges.push({ label: "New", tone: "blue" });
-  if (product.featured) badges.push({ label: "Featured", tone: "indigo" });
-  if (product.bestseller || (product.reviews || 0) >= 25 || (product.rating || 0) >= 4.7) badges.push({ label: "Bestseller", tone: "amber" });
   if (discount > 0) badges.push({ label: `${discount}% OFF`, tone: "rose" });
   if (!product.inStock) badges.push({ label: "Sold Out", tone: "slate" });
 
@@ -42,11 +39,8 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
   const cardPadding = compact ? "p-4" : "p-5";
 
   const badgeClass = {
-    blue: "bg-blue-600/95 text-white",
-    amber: "bg-amber-500/95 text-white",
     rose: "bg-rose-500/95 text-white",
     slate: "bg-slate-800/95 text-white",
-    indigo: "bg-indigo-600/95 text-white",
   };
 
   return (
