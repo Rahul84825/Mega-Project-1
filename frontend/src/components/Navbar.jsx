@@ -1,7 +1,8 @@
-import { useState, useRef, useCallback, memo } from "react";
+import { useState, useRef, useCallback, memo, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ShoppingCart,
+  Heart,
   Search,
   X,
   User,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useProducts } from "../context/ProductContext";
 
 const Navbar = memo(() => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -22,9 +24,16 @@ const Navbar = memo(() => {
   const navigate = useNavigate();
 
   const { cartCount } = useCart();
+  const { wishlist } = useProducts();
   const { user, logout, loading } = useAuth();
 
   const isProductsPage = location.pathname === "/products";
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("search") || "";
+    setSearchQuery(q);
+  }, [location.search]);
 
   const navLinkClass = ({ isActive }) =>
     `px-4 py-2 rounded-full text-sm font-bold transition-colors duration-200 ${
@@ -300,6 +309,19 @@ const Navbar = memo(() => {
 
           {/* ── Desktop Actions ── */}
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+            <NavLink
+              to="/products?wishlist=1"
+              className="p-2.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-all duration-300 relative"
+              aria-label="Wishlist"
+            >
+              <Heart className="w-5 h-5" />
+              {wishlist.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                  {wishlist.length > 99 ? "99+" : wishlist.length}
+                </span>
+              )}
+            </NavLink>
+
             {/* Cart */}
             <NavLink
               to="/cart"
@@ -333,6 +355,19 @@ const Navbar = memo(() => {
                 )}
               </button>
             )}
+            <NavLink
+              to="/products?wishlist=1"
+              className="p-2 text-slate-500 hover:text-rose-600 hover:bg-slate-50 rounded-full transition-colors relative"
+              aria-label="Wishlist"
+            >
+              <Heart className="w-5 h-5" />
+              {wishlist.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                  {wishlist.length > 99 ? "99+" : wishlist.length}
+                </span>
+              )}
+            </NavLink>
+
             <NavLink
               to="/cart"
               className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-50 rounded-full transition-colors relative"
@@ -425,6 +460,13 @@ const Navbar = memo(() => {
             className={mobileNavLinkClass}
           >
             Products
+          </NavLink>
+          <NavLink
+            to="/products?wishlist=1"
+            onClick={() => setMenuOpen(false)}
+            className={mobileNavLinkClass}
+          >
+            Wishlist
           </NavLink>
           <NavLink
             to="/about"

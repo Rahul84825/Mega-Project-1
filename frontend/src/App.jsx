@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop";
 import Navbar from "./components/Navbar";
@@ -5,32 +6,32 @@ import Footer from "./components/Footer";
 import { DeliveryBanner } from "./components/DeliveryNotice";
 
 // Pages
-import Home from "./pages/Home";
-import Products from "./pages/Products";
-import ProductDetails from "./pages/ProductDetails";
-import Cart from "./pages/Cart";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import Checkout from "./pages/Checkout";
-import VerifyEmail from "./pages/VerifyEmail";
-import NotFound from "./pages/NotFound";
+const Home = lazy(() => import("./pages/Home"));
+const Products = lazy(() => import("./pages/Products"));
+const ProductDetails = lazy(() => import("./pages/ProductDetails"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Policy Pages
-import ShippingPolicy from "./pages/policies/ShippingPolicy";
-import ReturnsExchange from "./pages/policies/ReturnsExchange";
-import PrivacyPolicy from "./pages/policies/PrivacyPolicy";
-import TermsConditions from "./pages/policies/TermsConditions";
+const ShippingPolicy = lazy(() => import("./pages/policies/ShippingPolicy"));
+const ReturnsExchange = lazy(() => import("./pages/policies/ReturnsExchange"));
+const PrivacyPolicy = lazy(() => import("./pages/policies/PrivacyPolicy"));
+const TermsConditions = lazy(() => import("./pages/policies/TermsConditions"));
 
 // Admin
-import AdminLayout from "./admin/AdminLayout";
-import AdminDashboard from "./admin/AdminDashboard";
-import AdminProducts from "./admin/AdminProducts";
-import AdminProductForm from "./admin/AdminProductForm";
-import AdminOffers from "./admin/AdminOffers";
-import AdminOrders from "./admin/AdminOrders";
-import AdminCategories from "./admin/AdminCategories";
+const AdminLayout = lazy(() => import("./admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("./admin/AdminDashboard"));
+const AdminProducts = lazy(() => import("./admin/AdminProducts"));
+const AdminProductForm = lazy(() => import("./admin/AdminProductForm"));
+const AdminOffers = lazy(() => import("./admin/AdminOffers"));
+const AdminOrders = lazy(() => import("./admin/AdminOrders"));
+const AdminCategories = lazy(() => import("./admin/AdminCategories"));
 
 // Contexts
 import { useAuth } from "./context/AuthContext";
@@ -38,6 +39,15 @@ import { useCart } from "./context/CartContext";
 
 // ── Pages where footer should NOT appear ─────────────────────────────────────
 const NO_FOOTER_ROUTES = ["/cart", "/checkout", "/login", "/signup"];
+
+const AppLoader = () => (
+  <div className="min-h-[60vh] flex items-center justify-center bg-slate-50">
+    <div className="flex items-center gap-3 text-slate-600">
+      <span className="w-8 h-8 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
+      <span className="text-sm font-semibold">Loading store view...</span>
+    </div>
+  </div>
+);
 
 // ── AdminGuard ────────────────────────────────────────────────────────────────
 const AdminGuard = ({ children }) => {
@@ -75,7 +85,8 @@ const StorefrontLayout = () => {
 const App = () => (
   <Router>
     <ScrollToTop />
-    <Routes>
+    <Suspense fallback={<AppLoader />}>
+      <Routes>
 
       {/* Admin — protected, no Navbar/Footer */}
       <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
@@ -107,7 +118,8 @@ const App = () => (
         <Route path="*"             element={<NotFound />} />
       </Route>
 
-    </Routes>
+      </Routes>
+    </Suspense>
   </Router>
 );
 

@@ -30,6 +30,8 @@ app.use("/api/orders",     require("./routes/orderRoutes"));
 app.use("/api/offers",     require("./routes/offerRoutes"));
 app.use("/api/upload",     require("./routes/uploadRoutes"));
 app.use("/api/contact",    require("./routes/contactRoutes"));
+app.use("/api/wishlist",   require("./routes/wishlistRoutes"));
+app.use("/api/admin",      require("./routes/adminRoutes"));
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {

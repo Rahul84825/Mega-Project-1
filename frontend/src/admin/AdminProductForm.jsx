@@ -6,7 +6,7 @@ import { useProducts } from "../context/ProductContext";
 const EMPTY_FORM = {
   name: "", category: "", price: "", mrp: "",
   description: "", image: "", inStock: true,
-  featured: false, brand: "", stock: "", tags: "",
+  featured: false, bestseller: false, isNew: false, brand: "", stock: "", tags: "",
 };
 
 const AdminProductForm = ({ mode = "add" }) => {
@@ -38,7 +38,9 @@ const AdminProductForm = ({ mode = "add" }) => {
           description: product.description || "",
           image:       product.image       || "",
           inStock:     product.inStock     ?? true,
-          featured:    product.featured    ?? false,  
+          featured:    product.featured    ?? false,
+          bestseller:  product.bestseller  ?? false,
+          isNew:       product.isNew       ?? false,
           brand:       product.brand       || "",
           stock:       product.stock       || "",
           tags:        (product.tags || []).join(", "),
@@ -103,7 +105,9 @@ const AdminProductForm = ({ mode = "add" }) => {
       stock:         +form.stock || 0,
       tags:          (form.tags || "").split(",").map((t) => t.trim()).filter(Boolean),
       inStock:  form.inStock,
-      featured: form.featured,
+      featured:    form.featured,
+      bestseller:  form.bestseller,
+      isNew:       form.isNew,
     };
 
     setSubmitting(true);
@@ -280,6 +284,8 @@ const AdminProductForm = ({ mode = "add" }) => {
           {[
             { key: "inStock", label: "In Stock Status", desc: "Available for purchase", color: "peer-checked:bg-emerald-500" },
             { key: "featured", label: "Featured Product", desc: "Highlight on homepage", color: "peer-checked:bg-blue-600" },
+            { key: "bestseller", label: "Bestseller", desc: "Show bestseller badge", color: "peer-checked:bg-orange-500" },
+            { key: "isNew", label: "New Arrival", desc: "Show new arrival badge", color: "peer-checked:bg-indigo-500" },
           ].map(({ key, label, desc, color }) => (
             <div key={key} className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto p-3 rounded-xl border border-slate-200 bg-slate-50/50">
               <div>

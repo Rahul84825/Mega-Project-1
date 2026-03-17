@@ -1,6 +1,6 @@
 import { useState, useCallback, memo } from "react";
 import {
-  Search, ShoppingCart, ArrowRight, Star, Shield, Truck, Phone, CheckCircle2
+  Search, ShoppingCart, ArrowRight, Star, BadgeCheck, FileText, Store, CheckCircle2
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { DeliveryNotice } from "./DeliveryNotice";
@@ -90,16 +90,16 @@ const Hero = memo(() => {
             {/* ── Trust Features ── */}
             <div className="flex flex-wrap justify-center lg:justify-start gap-x-5 sm:gap-x-8 gap-y-3 sm:gap-y-4 pt-5 sm:pt-6 border-t border-slate-200/60 w-full">
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                <span className="text-xs sm:text-sm font-bold text-slate-700">Authentic Copper</span>
+                <BadgeCheck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                <span className="text-xs sm:text-sm font-bold text-slate-700">Authentic Products</span>
               </div>
               <div className="flex items-center gap-2">
-                <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                <span className="text-xs sm:text-sm font-bold text-slate-700">Free Delivery</span>
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                <span className="text-xs sm:text-sm font-bold text-slate-700">GST Billing Available</span>
               </div>
               <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                <span className="text-xs sm:text-sm font-bold text-slate-700">Local Support</span>
+                <Store className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                <span className="text-xs sm:text-sm font-bold text-slate-700">Store Pickup Available</span>
               </div>
             </div>
           </div>

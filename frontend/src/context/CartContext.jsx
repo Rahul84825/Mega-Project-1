@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
+import { useSound } from "./SoundContext";
 
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
+  const { play } = useSound();
 
   // ── Derive a stable storage key per user ──────────────────────────
   // - Logged in  → "cart_<userId>"   (each user gets their own cart)
@@ -70,6 +72,7 @@ export const CartProvider = ({ children }) => {
         },
       ];
     });
+    play("cart");
   };
 
   // ── Change quantity ───────────────────────────────────────────────
@@ -86,7 +89,11 @@ export const CartProvider = ({ children }) => {
 
   // ── Remove item ───────────────────────────────────────────────────
   const removeFromCart = (id) =>
-    setCartItems((prev) => prev.filter((item) => (item._id || item.id) !== id));
+    setCartItems((prev) => {
+      const next = prev.filter((item) => (item._id || item.id) !== id);
+      if (next.length !== prev.length) play("cart");
+      return next;
+    });
 
   // ── Clear entire cart ─────────────────────────────────────────────
   const clearCart = () => setCartItems([]);

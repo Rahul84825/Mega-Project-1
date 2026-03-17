@@ -1,13 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, PlusCircle, Tag,
   ShoppingBag, Store, LogOut, ChevronLeft, Menu, Percent,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { io } from "socket.io-client";
-
-const SOCKET_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/api\/?$/, "");
 
 const NAV_ITEMS = [
   { to: "/admin",            label: "Dashboard",   icon: LayoutDashboard, end: true },
@@ -23,117 +20,7 @@ const AdminLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { logout, user } = useAuth();
-  const orderSoundRef = useRef(null);
-  const audioUnlockedRef = useRef(false);
-  const pendingSoundRef = useRef(false);
-
-  // ── Global new-order notification sound (all admin pages) ──────────────────
-  useEffect(() => {
-    if (!user || user.role !== "admin") return;
-
-    // Single reusable Audio instance — no duplicate sounds
-    const sound = new Audio("/sounds/zomato_ring_5.mp3");
-    sound.preload = "auto";
-    sound.loop = false;
-    orderSoundRef.current = sound;
-    audioUnlockedRef.current = false;
-    pendingSoundRef.current = false;
-
-    sound.load();
-
-    const stopSound = () => {
-      if (!sound.paused) {
-        sound.pause();
-      }
-      sound.currentTime = 0;
-      pendingSoundRef.current = false;
-    };
-
-    const playNotificationSound = async () => {
-      sound.loop = document.hidden;
-
-      // While hidden, keep a single looping alert alive instead of restarting it.
-      if (document.hidden && !sound.paused) {
-        return;
-      }
-
-      if (!sound.paused) {
-        sound.pause();
-      }
-
-      sound.currentTime = 0;
-
-      try {
-        await sound.play();
-        pendingSoundRef.current = false;
-      } catch (err) {
-        pendingSoundRef.current = true;
-        console.warn("[AdminLayout] Sound playback failed:", err?.message || err);
-      }
-    };
-
-    const unlockAudio = async () => {
-      if (audioUnlockedRef.current) {
-        if (pendingSoundRef.current) {
-          await playNotificationSound();
-        }
-        return;
-      }
-
-      const previousMuted = sound.muted;
-      sound.muted = true;
-      sound.currentTime = 0;
-
-      try {
-        await sound.play();
-        sound.pause();
-        sound.currentTime = 0;
-        sound.muted = previousMuted;
-        audioUnlockedRef.current = true;
-
-        if (pendingSoundRef.current) {
-          await playNotificationSound();
-        }
-      } catch (err) {
-        sound.muted = previousMuted;
-      }
-    };
-
-    // Stop looping sound when admin returns to the tab
-    const handleVisibilityChange = () => {
-      if (!document.hidden) stopSound();
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("pointerdown", unlockAudio);
-    window.addEventListener("keydown", unlockAudio);
-    window.addEventListener("touchstart", unlockAudio);
-
-    const socket = io(SOCKET_URL, {
-      transports: ["websocket", "polling"],
-      withCredentials: true,
-      reconnection: true,
-    });
-
-    socket.on("newOrder", () => {
-      playNotificationSound();
-    });
-
-    socket.on("connect_error", (err) => {
-      console.warn("[AdminLayout] Notification socket error:", err.message);
-    });
-
-    return () => {
-      stopSound();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("pointerdown", unlockAudio);
-      window.removeEventListener("keydown", unlockAudio);
-      window.removeEventListener("touchstart", unlockAudio);
-      socket.disconnect();
-      orderSoundRef.current = null;
-    };
-  }, [user?.role]);
+  const { logout } = useAuth();
 
   // Custom active check so /admin/products/add doesn't highlight "Products"
   const isActive = (item) => {

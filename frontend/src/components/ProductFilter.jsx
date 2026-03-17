@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Search, X, Heart, PackageCheck } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 
 // ── Static filter config ───────────────────────────────────────────
@@ -63,31 +63,14 @@ const FilterDropdown = ({ label, value, options, onChange }) => {
   );
 };
 
-// ── Stock Toggle ───────────────────────────────────────────────────
-const StockToggle = ({ inStockOnly, onChange }) => (
-  <button
-    onClick={() => onChange(!inStockOnly)}
-    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200 whitespace-nowrap
-      ${inStockOnly
-        ? "bg-green-600 text-white border-green-600 shadow-md"
-        : "bg-white text-gray-700 border-gray-200 hover:border-green-400 hover:text-green-600"
-      }`}
-  >
-    <span className={`w-2 h-2 rounded-full ${inStockOnly ? "bg-white" : "bg-green-500"}`} />
-    In Stock Only
-  </button>
-);
-
 // ── Main ProductFilter ─────────────────────────────────────────────
 const ProductFilter = ({ filters, onChange, totalResults }) => {
-  // ✅ Pull live categories from context — updates when admin adds/edits/deletes
   const { categories } = useProducts();
 
-  // Build the "All Categories" + dynamic list from DB
   const categoryOptions = [
     { id: "all", label: "All Categories" },
     ...(categories || []).map((c) => ({
-      id:    c._id || c.id,          // ✅ use MongoDB _id for filtering
+      id:    c._id || c.id,
       label: c.label || c.name,
     })),
   ];
@@ -96,26 +79,38 @@ const ProductFilter = ({ filters, onChange, totalResults }) => {
     filters.category   !== "all"     ||
     filters.priceRange !== "all"     ||
     filters.sortBy     !== "default" ||
-    filters.inStockOnly;
+    filters.inStockOnly ||
+    filters.wishlistOnly;
 
   const clearAll = () =>
-    onChange({ category: "all", priceRange: "all", sortBy: "default", inStockOnly: false, search: "" });
+    onChange({ category: "all", priceRange: "all", sortBy: "default", inStockOnly: false, wishlistOnly: false, search: "" });
 
   const activeCategoryLabel =
     categoryOptions.find((c) => c.id === filters.category)?.label || filters.category;
 
   return (
     <div className="bg-white border-b border-gray-200 sticky top-[64px] md:top-[80px] z-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5">
 
-        {/* Filter Row */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 text-gray-500 mr-1">
-            <SlidersHorizontal className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:block">Filters:</span>
-          </div>
+        {/* ── Single filter row ── */}
+        <div className="flex items-center gap-2 flex-wrap">
 
-          {/* ✅ Dynamic category dropdown */}
+          {/* Inline search */}
+          <label className="relative flex-1 min-w-[160px] max-w-xs">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={filters.search || ""}
+              onChange={(e) => onChange({ ...filters, search: e.target.value })}
+              placeholder="Search within results..."
+              className="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus:bg-white transition-colors"
+            />
+          </label>
+
+          {/* Divider */}
+          <div className="h-6 w-px bg-gray-200 hidden sm:block" />
+
+          {/* Category */}
           <FilterDropdown
             label="Category"
             value={filters.category}
@@ -123,82 +118,110 @@ const ProductFilter = ({ filters, onChange, totalResults }) => {
             onChange={(val) => onChange({ ...filters, category: val })}
           />
 
+          {/* Price */}
           <FilterDropdown
-            label="Price Range"
+            label="Price"
             value={filters.priceRange}
             options={PRICE_RANGES}
             onChange={(val) => onChange({ ...filters, priceRange: val })}
           />
 
+          {/* Sort */}
           <FilterDropdown
-            label="Sort By"
+            label="Sort"
             value={filters.sortBy}
             options={SORT_OPTIONS}
             onChange={(val) => onChange({ ...filters, sortBy: val })}
           />
 
-          <StockToggle
-            inStockOnly={filters.inStockOnly}
-            onChange={(val) => onChange({ ...filters, inStockOnly: val })}
-          />
+          {/* In Stock toggle — compact */}
+          <button
+            onClick={() => onChange({ ...filters, inStockOnly: !filters.inStockOnly })}
+            title="In Stock Only"
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-150 whitespace-nowrap
+              ${filters.inStockOnly
+                ? "bg-green-600 text-white border-green-600"
+                : "bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-600"
+              }`}
+          >
+            <PackageCheck className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">In Stock</span>
+          </button>
 
-          {hasActiveFilters && (
-            <button
-              onClick={clearAll}
-              className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-all duration-200 ml-auto"
-            >
-              <X className="w-3.5 h-3.5" />
-              Clear All
-            </button>
-          )}
+          {/* Wishlist toggle — compact */}
+          <button
+            onClick={() => onChange({ ...filters, wishlistOnly: !filters.wishlistOnly })}
+            title="Wishlist Only"
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-150 whitespace-nowrap
+              ${filters.wishlistOnly
+                ? "bg-rose-600 text-white border-rose-600"
+                : "bg-white text-gray-600 border-gray-200 hover:border-rose-300 hover:text-rose-600"
+              }`}
+          >
+            <Heart className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Saved</span>
+          </button>
 
-          {!hasActiveFilters && totalResults !== undefined && (
-            <span className="ml-auto text-sm text-gray-500">{totalResults} products</span>
-          )}
+          {/* Clear + count */}
+          <div className="flex items-center gap-2 ml-auto shrink-0">
+            {totalResults !== undefined && (
+              <span className="text-xs text-gray-400 font-medium">{totalResults} found</span>
+            )}
+            {hasActiveFilters && (
+              <button
+                onClick={clearAll}
+                className="flex items-center gap-1 px-2.5 py-2 text-xs font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-all duration-150"
+              >
+                <X className="w-3 h-3" />
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Active Filter Pills */}
+        {/* ── Active filter pills (only visible when filters are active) ── */}
         {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-gray-100">
-            <span className="text-xs text-gray-400">Active:</span>
-
+          <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-gray-100">
             {filters.category !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
                 {activeCategoryLabel}
-                <button onClick={() => onChange({ ...filters, category: "all" })}>
-                  <X className="w-3 h-3 hover:text-blue-900" />
+                <button onClick={() => onChange({ ...filters, category: "all" })} className="hover:text-blue-900 ml-0.5">
+                  <X className="w-2.5 h-2.5" />
                 </button>
               </span>
             )}
-
             {filters.priceRange !== "all" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
                 {PRICE_RANGES.find((p) => p.id === filters.priceRange)?.label}
-                <button onClick={() => onChange({ ...filters, priceRange: "all" })}>
-                  <X className="w-3 h-3 hover:text-blue-900" />
+                <button onClick={() => onChange({ ...filters, priceRange: "all" })} className="hover:text-blue-900 ml-0.5">
+                  <X className="w-2.5 h-2.5" />
                 </button>
               </span>
             )}
-
             {filters.sortBy !== "default" && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-100">
                 {SORT_OPTIONS.find((s) => s.id === filters.sortBy)?.label}
-                <button onClick={() => onChange({ ...filters, sortBy: "default" })}>
-                  <X className="w-3 h-3 hover:text-blue-900" />
+                <button onClick={() => onChange({ ...filters, sortBy: "default" })} className="hover:text-blue-900 ml-0.5">
+                  <X className="w-2.5 h-2.5" />
                 </button>
               </span>
             )}
-
             {filters.inStockOnly && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full border border-green-100">
-                In Stock Only
-                <button onClick={() => onChange({ ...filters, inStockOnly: false })}>
-                  <X className="w-3 h-3 hover:text-green-900" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full border border-green-100">
+                In Stock
+                <button onClick={() => onChange({ ...filters, inStockOnly: false })} className="hover:text-green-900 ml-0.5">
+                  <X className="w-2.5 h-2.5" />
                 </button>
               </span>
             )}
-
-            <span className="ml-auto text-sm text-gray-500">{totalResults} results</span>
+            {filters.wishlistOnly && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-700 text-xs font-medium rounded-full border border-rose-100">
+                Saved
+                <button onClick={() => onChange({ ...filters, wishlistOnly: false })} className="hover:text-rose-900 ml-0.5">
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            )}
           </div>
         )}
       </div>

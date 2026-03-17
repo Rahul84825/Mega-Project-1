@@ -98,4 +98,31 @@ const toggleStock = asyncHandler(async (req, res) => {
   res.json({ inStock: product.inStock });
 });
 
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct, toggleStock };
+// ── PATCH /api/products/:id/featured (admin) ──────────────────────────────────
+const toggleFeatured = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) { res.status(404); throw new Error("Product not found"); }
+  product.featured = !product.featured;
+  await product.save();
+  res.json({ featured: product.featured, _id: product._id });
+});
+
+// ── PATCH /api/products/:id/bestseller (admin) ────────────────────────────────
+const toggleBestseller = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) { res.status(404); throw new Error("Product not found"); }
+  product.bestseller = !product.bestseller;
+  await product.save();
+  res.json({ bestseller: product.bestseller, _id: product._id });
+});
+
+// ── PATCH /api/products/:id/isnew (admin) ────────────────────────────────────
+const toggleIsNew = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) { res.status(404); throw new Error("Product not found"); }
+  product.isNew = !product.isNew;
+  await product.save();
+  res.json({ isNew: product.isNew, _id: product._id });
+});
+
+module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct, toggleStock, toggleFeatured, toggleBestseller, toggleIsNew };

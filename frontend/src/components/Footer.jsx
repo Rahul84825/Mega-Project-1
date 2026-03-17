@@ -49,9 +49,9 @@ const CONTACT_INFO = [
 ];
 
 const TRUST_BADGES = [
-  { icon: Shield,    label: "Genuine Products" },
-  { icon: Truck,     label: "Free Delivery"    },
-  { icon: RefreshCw, label: "Easy Returns"     },
+  { icon: Shield,    label: "Authentic Products" },
+  { icon: Truck,     label: "Store Pickup Available" },
+  { icon: RefreshCw, label: "GST Billing" },
 ];
 
 const SOCIAL = [

@@ -78,8 +78,10 @@ const ScrollRow = ({ children }) => {
 // ── 1. DEALS & OFFERS ─────────────────────────────────────────────────────────
 const DealsSection = () => {
   const navigate = useNavigate();
-  const { offers } = useProducts();
-  const activeOffers = offers?.filter((o) => o.active) || [];
+  const { offers, products } = useProducts();
+  const activeOffers = (offers || [])
+    .filter((o) => (o.isActive !== undefined ? o.isActive : o.active))
+    .sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0));
   const [timeLeft, setTimeLeft] = useState({ h: 5, m: 42, s: 17 });
 
   useEffect(() => {
@@ -98,6 +100,28 @@ const DealsSection = () => {
 
   const pad = (n) => String(n).padStart(2, "0");
   if (activeOffers.length === 0) return null;
+
+  const getOfferTargetUrl = (offer) => {
+    if (offer.offerType === "product" && offer.targetProduct) {
+      const pid = offer.targetProduct?._id || offer.targetProduct?.id || offer.targetProduct;
+      return `/products/${pid}`;
+    }
+    if (offer.offerType === "category" && (offer.targetCategory || offer.category)) {
+      return `/products?category=${offer.targetCategory || offer.category}`;
+    }
+    return "/products";
+  };
+
+  const getOfferImage = (offer) => {
+    if (offer.image) return offer.image;
+    if (offer.offerType === "product" && offer.targetProduct) {
+      const p = typeof offer.targetProduct === "object"
+        ? offer.targetProduct
+        : (products || []).find((item) => (item._id || item.id) === offer.targetProduct);
+      return p?.image || "";
+    }
+    return "";
+  };
 
   return (
     <section className="py-16 bg-slate-50 border-b border-slate-100">
@@ -126,36 +150,55 @@ const DealsSection = () => {
           </div>
         </div>
 
-        {/* Deal Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeOffers.map((deal) => (
-            <div key={deal._id || deal.id}
-              onClick={() => navigate(`/products?category=${deal.category || ""}`)}
-              className={`bg-gradient-to-br ${deal.bg || "from-blue-700 to-blue-900"} rounded-3xl p-8 cursor-pointer group hover:-translate-y-1 transition-all duration-300 shadow-md hover:shadow-xl overflow-hidden relative border border-white/10`}>
-              
-              {/* Decorative background circles */}
-              <div className={`absolute -right-8 -bottom-8 w-40 h-40 ${deal.accent || "bg-blue-500"} rounded-full opacity-20 blur-2xl group-hover:scale-150 transition-transform duration-700`} />
-              <div className={`absolute top-4 right-4 w-16 h-16 ${deal.accent || "bg-blue-400"} rounded-full opacity-20 blur-xl`} />
-              
-              <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-6 border border-white/20 shadow-sm">
-                <Zap className="w-3.5 h-3.5 fill-current text-yellow-300" />{deal.badge || "Special Promo"}
-              </span>
-              
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-5xl drop-shadow-md group-hover:scale-110 transition-transform duration-300">{deal.icon || "🎁"}</span>
-                <span className="text-4xl font-black text-white tracking-tight drop-shadow-sm">
-                  {deal.discount}{typeof deal.discount === "number" ? "% OFF" : ""}
+        {/* Professional offer hierarchy: hero banner + support cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {activeOffers.slice(0, 1).map((deal) => {
+            const image = getOfferImage(deal);
+            return (
+              <div
+                key={deal._id || deal.id}
+                onClick={() => navigate(getOfferTargetUrl(deal))}
+                className={`lg:col-span-2 bg-gradient-to-br ${deal.bg || "from-blue-700 to-blue-900"} rounded-3xl p-6 sm:p-8 cursor-pointer group hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-2xl overflow-hidden relative border border-white/10 min-h-[280px]`}
+              >
+                <div className={`absolute -right-10 -bottom-10 w-48 h-48 ${deal.accent || "bg-blue-500"} rounded-full opacity-20 blur-2xl group-hover:scale-150 transition-transform duration-700`} />
+                {image ? (
+                  <img src={image} alt={deal.title} className="absolute right-4 bottom-0 w-40 sm:w-56 h-40 sm:h-56 object-cover rounded-2xl border border-white/20 shadow-xl opacity-90" />
+                ) : null}
+
+                <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-widest mb-5 border border-white/20 shadow-sm">
+                  <Zap className="w-3.5 h-3.5 fill-current text-yellow-300" />{deal.badge || "Featured Offer"}
                 </span>
+
+                <h3 className="text-white font-black text-2xl sm:text-3xl leading-tight mb-2 max-w-[420px]">{deal.title}</h3>
+                <p className="text-blue-100 text-sm sm:text-base mb-5 leading-relaxed max-w-[460px]">{deal.description || deal.subtitle}</p>
+
+                <div className="flex items-end gap-4">
+                  <span className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-sm">
+                    {deal.discount || `${deal.discountPercent || 0}% OFF`}
+                  </span>
+                  <span className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-bold py-2 px-4 rounded-full transition-all duration-300 mb-1">
+                    Shop Now <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </div>
               </div>
-              
-              <h3 className="text-white font-extrabold text-xl leading-tight mb-2">{deal.title}</h3>
-              <p className="text-blue-100 text-sm mb-6 leading-relaxed">{deal.description || deal.subtitle}</p>
-              
-              <div className="mt-auto inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-bold py-2.5 px-5 rounded-full transition-all duration-300">
-                Shop Deal <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            );
+          })}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+            {activeOffers.slice(1, 3).map((deal) => (
+              <div
+                key={deal._id || deal.id}
+                onClick={() => navigate(getOfferTargetUrl(deal))}
+                className={`bg-gradient-to-br ${deal.bg || "from-slate-700 to-slate-900"} rounded-2xl p-5 cursor-pointer group hover:-translate-y-1 transition-all duration-300 shadow-md hover:shadow-xl relative overflow-hidden`}
+              >
+                <div className={`absolute -right-8 -bottom-8 w-28 h-28 ${deal.accent || "bg-slate-500"} rounded-full opacity-25 blur-2xl`} />
+                <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest mb-1">{deal.offerType || "banner"}</p>
+                <h4 className="text-white font-extrabold text-lg leading-tight mb-1">{deal.title}</h4>
+                <p className="text-white/80 text-xs line-clamp-2 mb-3">{deal.description || deal.subtitle}</p>
+                <p className="text-white font-black text-2xl">{deal.discount || `${deal.discountPercent || 0}% OFF`}</p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>

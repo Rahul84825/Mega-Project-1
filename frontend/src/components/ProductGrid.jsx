@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { PackageX, RefreshCcw } from "lucide-react";
 import ProductCard from "./ProductCard";
+import QuickViewModal from "./QuickViewModal";
 import ProductFilter, { PRICE_RANGES } from "./ProductFilter";
 import { useProducts } from "../context/ProductContext";
+import { isCategoryMatch } from "../utils/category";
 
 const ProductCardSkeleton = () => (
   <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm flex flex-col animate-pulse">
@@ -58,12 +60,14 @@ export const DEFAULT_FILTERS = {
   priceRange:  "all",
   sortBy:      "default",
   inStockOnly: false,
+  wishlistOnly: false,
   search:      "",
 };
 
-const ProductGrid = ({ initialFilters }) => {
-  const { products, loading } = useProducts();
+const ProductGrid = ({ initialFilters, onCountChange }) => {
+  const { products, categories, wishlist, loading } = useProducts();
   const [filters, setFilters] = useState({ ...DEFAULT_FILTERS, ...initialFilters });
+  const [quickViewProduct, setQuickViewProduct] = useState(null);
 
   // Sync filters when URL params change (e.g. navigating from Hero search)
   useEffect(() => {
@@ -73,9 +77,11 @@ const ProductGrid = ({ initialFilters }) => {
   }, [initialFilters]);
 
   const filteredProducts = products
-    .filter((p) => filters.category === "all" || p.category === filters.category ||
-      // support populated category object from MongoDB
-      p.category?.slug === filters.category || p.category?.name?.toLowerCase() === filters.category)
+    .filter((p) => isCategoryMatch(p.category, filters.category, categories))
+    .filter((p) => {
+      if (!filters.wishlistOnly) return true;
+      return wishlist.includes(String(p._id || p.id));
+    })
     .filter((p) => {
       if (filters.priceRange === "all") return true;
       const range = PRICE_RANGES.find((r) => r.id === filters.priceRange);
@@ -104,6 +110,10 @@ const ProductGrid = ({ initialFilters }) => {
 
   const clearFilters = () => setFilters(DEFAULT_FILTERS);
 
+  useEffect(() => {
+    if (onCountChange && !loading) onCountChange(filteredProducts.length);
+  }, [filteredProducts.length, loading, onCountChange]);
+
   return (
     <div className="bg-slate-50 min-h-screen">
       {/* The ProductFilter component acts as the sticky header/sidebar for filtering.
@@ -115,18 +125,29 @@ const ProductGrid = ({ initialFilters }) => {
         totalResults={loading ? undefined : filteredProducts.length}
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">
           {loading
             ? Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)
             : filteredProducts.length === 0
             ? <EmptyState onClear={clearFilters} isSearch={!!(filters.search || "")} query={filters.search || ""} />
             : filteredProducts.map((product) => (
-                <ProductCard key={product._id || product.id} product={product} />
+                <ProductCard
+                  key={product._id || product.id}
+                  product={product}
+                  onQuickView={setQuickViewProduct}
+                />
               ))
           }
         </div>
       </div>
+
+      {quickViewProduct && (
+        <QuickViewModal
+          product={quickViewProduct}
+          onClose={() => setQuickViewProduct(null)}
+        />
+      )}
     </div>
   );
 };

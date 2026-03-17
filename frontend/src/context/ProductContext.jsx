@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { api } from "../utils/api";
+import { useAuth } from "./AuthContext";
+import { useSound } from "./SoundContext";
 
 // ── Kept for offline/fallback use ─────────────────────────────────
 const FALLBACK_OFFERS = [
@@ -9,6 +11,8 @@ const FALLBACK_OFFERS = [
 ];
 
 const ProductContext = createContext(null);
+const RECENTLY_VIEWED_KEY = "recently_viewed_products";
+const WISHLIST_KEY = "wishlist_products";
 
 const getOrderKey = (order) => order?._id || order?.id || order?.orderId || null;
 
@@ -33,10 +37,14 @@ const upsertOrderAtTop = (list, incoming) => {
 };
 
 export const ProductProvider = ({ children }) => {
+  const { user } = useAuth();
+  const { play } = useSound();
   const [products,   setProducts]   = useState([]);
   const [offers,     setOffers]     = useState([]);
   const [categories, setCategories] = useState([]);
   const [orders,     setOrders]     = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
 
@@ -46,6 +54,41 @@ export const ProductProvider = ({ children }) => {
   useEffect(() => {
     fetchAll();
   }, []);
+
+  useEffect(() => {
+    try {
+      const storedRecent = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
+      setRecentlyViewed(Array.isArray(storedRecent) ? storedRecent : []);
+    } catch {
+      setRecentlyViewed([]);
+    }
+  }, []);
+
+  // ── Sync wishlist: DB for logged-in users, localStorage for guests ────────
+  useEffect(() => {
+    if (user) {
+      // load from server
+      api.get("/api/wishlist", token())
+        .then((data) => setWishlist(Array.isArray(data.wishlist) ? data.wishlist : []))
+        .catch(() => {
+          // fallback to localStorage if request fails
+          try {
+            const stored = JSON.parse(localStorage.getItem(WISHLIST_KEY) || "[]");
+            setWishlist(Array.isArray(stored) ? stored : []);
+          } catch { setWishlist([]); }
+        });
+    } else {
+      // guest — use localStorage
+      try {
+        const stored = JSON.parse(localStorage.getItem(WISHLIST_KEY) || "[]");
+        setWishlist(Array.isArray(stored) ? stored : []);
+      } catch { setWishlist([]); }
+    }
+  }, [user]);
+
+  useEffect(() => {
+    localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(recentlyViewed));
+  }, [recentlyViewed]);
 
   async function fetchAll() {
     setLoading(true);
@@ -72,6 +115,11 @@ export const ProductProvider = ({ children }) => {
           ...FALLBACK_OFFERS[i % FALLBACK_OFFERS.length],
           ...o,
           id: o._id || o.id,
+          description: o.description || o.subtitle || "",
+          active: o.isActive !== undefined ? o.isActive : o.active,
+          offerType: o.offerType || (o.targetProduct ? "product" : o.targetCategory || o.category ? "category" : "banner"),
+          targetCategory: o.targetCategory || o.category || "",
+          priority: Number(o.priority || 0),
         }));
         setOffers(merged.length ? merged : FALLBACK_OFFERS);
       } else {
@@ -108,6 +156,21 @@ export const ProductProvider = ({ children }) => {
     const data = await api.patch(`/api/products/${id}/stock`, {}, token());
     const updated = data.product || data;
     setProducts((prev) => prev.map((p) => (p._id || p.id) === id ? { ...p, ...updated } : p));
+  };
+
+  const toggleFeatured = async (id) => {
+    const data = await api.patch(`/api/products/${id}/featured`, {}, token());
+    setProducts((prev) => prev.map((p) => (p._id || p.id) === id ? { ...p, featured: data.featured } : p));
+  };
+
+  const toggleBestseller = async (id) => {
+    const data = await api.patch(`/api/products/${id}/bestseller`, {}, token());
+    setProducts((prev) => prev.map((p) => (p._id || p.id) === id ? { ...p, bestseller: data.bestseller } : p));
+  };
+
+  const toggleIsNew = async (id) => {
+    const data = await api.patch(`/api/products/${id}/isnew`, {}, token());
+    setProducts((prev) => prev.map((p) => (p._id || p.id) === id ? { ...p, isNew: data.isNew } : p));
   };
 
   // ── Offer CRUD ────────────────────────────────────────────────────
@@ -252,17 +315,91 @@ export const ProductProvider = ({ children }) => {
   };
 
   // ── Refresh helper ────────────────────────────────────────────────
-  const refresh = () => fetchAll();
+  const refresh = useCallback(() => fetchAll(), []);
+
+  const markProductViewed = useCallback((productId) => {
+    if (!productId) return;
+    const id = String(productId);
+    setRecentlyViewed((prev) => [id, ...prev.filter((item) => item !== id)].slice(0, 12));
+  }, []);
+
+  const toggleWishlist = useCallback(async (productId) => {
+    if (!productId) return;
+    const id = String(productId);
+    const currentlyWishlisted = wishlist.includes(id);
+
+    if (user) {
+      // Optimistically update UI, then sync with server
+      setWishlist((prev) => {
+        if (prev.includes(id)) return prev.filter((item) => item !== id);
+        return [id, ...prev];
+      });
+      play("wishlist");
+      try {
+        if (currentlyWishlisted) {
+          await api.delete(`/api/wishlist/${id}`, token());
+        } else {
+          await api.post(`/api/wishlist/${id}`, {}, token());
+        }
+      } catch {
+        // Revert on error
+        setWishlist((prev) => {
+          if (prev.includes(id)) return prev.filter((item) => item !== id);
+          return [id, ...prev];
+        });
+      }
+    } else {
+      // Guest — localStorage only
+      setWishlist((prev) => {
+        const next = prev.includes(id) ? prev.filter((item) => item !== id) : [id, ...prev];
+        localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
+        return next;
+      });
+      play("wishlist");
+    }
+  }, [play, user, wishlist]);
+
+  const clearRecentlyViewed = useCallback(() => setRecentlyViewed([]), []);
+
+  const recentlyViewedProducts = useMemo(() => {
+    const productMap = new Map((products || []).map((item) => [String(item._id || item.id), item]));
+    return recentlyViewed.map((id) => productMap.get(id)).filter(Boolean);
+  }, [products, recentlyViewed]);
+
+  const wishlistProducts = useMemo(() => {
+    const wishlistSet = new Set(wishlist);
+    return (products || []).filter((item) => wishlistSet.has(String(item._id || item.id)));
+  }, [products, wishlist]);
+
+  const value = useMemo(() => ({
+    products, offers, categories, orders,
+    recentlyViewed, wishlist, recentlyViewedProducts, wishlistProducts,
+    loading, error, refresh,
+    addProduct, updateProduct, deleteProduct, toggleStock,
+    toggleFeatured, toggleBestseller, toggleIsNew,
+    addOffer, updateOffer, deleteOffer, toggleOffer,
+    addCategory, updateCategory, deleteCategory,
+    markProductViewed, clearRecentlyViewed, toggleWishlist,
+    fetchOrders, placeOrder, markOrderDelivered, markOrderPaid, submitUpiTxnId, addIncomingOrder,
+  }), [
+    products,
+    offers,
+    categories,
+    orders,
+    recentlyViewed,
+    wishlist,
+    recentlyViewedProducts,
+    wishlistProducts,
+    loading,
+    error,
+    refresh,
+    markProductViewed,
+    clearRecentlyViewed,
+    toggleWishlist,
+  ]);
 
   return (
-    <ProductContext.Provider value={{
-      products, offers, categories, orders,
-      loading, error, refresh,
-      addProduct, updateProduct, deleteProduct, toggleStock,
-      addOffer,   updateOffer,  deleteOffer,  toggleOffer,
-      addCategory, updateCategory, deleteCategory,
-      fetchOrders, placeOrder, markOrderDelivered, markOrderPaid, submitUpiTxnId, addIncomingOrder,
-    }}>
+    <ProductContext.Provider value={value}>
       {children}
     </ProductContext.Provider>
   );

@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Package, Tag, AlertTriangle, TrendingUp,
   PlusCircle, Eye, ShoppingBag, LayoutDashboard,
-  IndianRupee, ChevronRight
+  IndianRupee, ChevronRight, Users
 } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 
@@ -36,12 +36,25 @@ const AdminDashboard = () => {
   const { products, offers, orders, categories, fetchOrders } = useProducts();
   const navigate = useNavigate();
 
-  useEffect(() => { fetchOrders(); }, []);
+  const [adminStats, setAdminStats] = useState({ totalUsers: null });
+
+  useEffect(() => {
+    fetchOrders();
+    const token = localStorage.getItem("token");
+    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/admin/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((data) => setAdminStats(data))
+      .catch(() => {});
+  }, []);
 
   const totalProducts = products.length;
   const inStock       = products.filter((p) => p.inStock).length;
   const outOfStock    = products.filter((p) => !p.inStock).length;
   const newProducts   = products.filter((p) => p.isNew).length;
+    const featuredCount = products.filter((p) => p.featured).length;
+    const bestsellerCount = products.filter((p) => p.bestseller).length;
   const activeOffers  = offers.filter((o) => o.active).length;
   const totalOrders   = orders.length;
   const totalRevenue  = orders.reduce((s, o) => s + (o.total || 0), 0);
@@ -109,6 +122,11 @@ const AdminDashboard = () => {
         <StatCard label="Active Offers" value={activeOffers} sub={`${offers.length} total campaigns running`}
           icon={Tag} color="text-amber-600" bg="bg-amber-50"
           onClick={() => navigate("/admin/offers")} />
+        <StatCard label="Registered Users" value={adminStats.totalUsers ?? "—"} sub="Total customer accounts"
+          icon={Users} color="text-violet-600" bg="bg-violet-50" />
+        <StatCard label="Featured Products" value={featuredCount} sub={`${bestsellerCount} marked as bestseller`}
+          icon={TrendingUp} color="text-amber-600" bg="bg-amber-50"
+          onClick={() => navigate("/admin/products")} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">

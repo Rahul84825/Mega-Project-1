@@ -18,6 +18,7 @@ const productSchema = new mongoose.Schema(
     tags:          [{ type: String }],
     rating:        { type: Number, default: 0, min: 0, max: 5 },
     reviews:       { type: Number, default: 0 },
+    bestseller:    { type: Boolean, default: false },
     specifications: { type: Map, of: String },
   },
   { timestamps: true }

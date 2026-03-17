@@ -9,6 +9,7 @@ import ProductCard from "../components/ProductCard";
 import { api } from "../utils/api";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
+import { getCategoryLabel, getCategorySlug } from "../utils/category";
 
 const CATEGORY_SPECS = {
   steel:      [{ label: "Material", value: "Food-grade Stainless Steel (SS304)" }, { label: "Finish", value: "Mirror Polish" }, { label: "Dishwasher", value: "Safe" }, { label: "Induction", value: "Compatible" }, { label: "Warranty", value: "1 Year" }, { label: "Origin", value: "Made in India" }],
@@ -41,7 +42,7 @@ const ProductDetails = () => {
   const { id }   = useParams();
   const navigate = useNavigate();
   const { addToCart }   = useCart();
-  const { categories }  = useProducts(); // ← use context categories to resolve name
+  const { categories, markProductViewed }  = useProducts();
 
   const [product, setProduct]     = useState(null);
   const [related, setRelated]     = useState([]);
@@ -53,6 +54,11 @@ const ProductDetails = () => {
   const [added, setAdded]         = useState(false);
 
   useEffect(() => { fetchProduct(); window.scrollTo(0, 0); }, [id]);
+
+  useEffect(() => {
+    if (!product) return;
+    markProductViewed(product._id || product.id);
+  }, [product, markProductViewed]);
 
   async function fetchProduct() {
     setLoading(true); setError(false);
@@ -81,26 +87,6 @@ const ProductDetails = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
   if (error || !product) return <ProductNotFound />;
 
-  // ── Resolve category name from context categories list ───────────────────
-  const resolveCategoryName = (cat) => {
-    if (!cat) return "";
-    // Populated object from backend
-    if (typeof cat === "object") return cat.name || cat.label || "";
-    // Raw _id or slug string — look up in context
-    const found = categories.find((c) => c._id === cat || c.slug === cat || c.id === cat);
-    if (found) return found.name || found.label || "";
-    // Fallback slug map
-    const SLUG_MAP = { steel: "Stainless Steel", copper: "Copper Utensils", brass: "Pital (Brass)", pooja: "Pooja Essentials", appliances: "Home Appliances" };
-    return SLUG_MAP[cat] || "";
-  };
-
-  const resolveSlug = (cat) => {
-    if (!cat) return "";
-    if (typeof cat === "object") return cat.slug || cat._id || "";
-    const found = categories.find((c) => c._id === cat || c.id === cat);
-    return found?.slug || cat;
-  };
-
   // Build gallery: primary `image` first, then unique valid entries from `images[]`
   const allImages = [];
   if (product.image && product.image.startsWith("http")) allImages.push(product.image);
@@ -115,8 +101,8 @@ const ProductDetails = () => {
   const mrp = product.mrp || product.originalPrice || 0;
   const discount = mrp > product.price ? Math.round(((mrp - product.price) / mrp) * 100) : 0;
   const savings = mrp > product.price ? mrp - product.price : 0;
-  const categoryLabel = resolveCategoryName(product.category);
-  const categorySlug  = resolveSlug(product.category);
+  const categoryLabel = getCategoryLabel(product.category, categories);
+  const categorySlug  = getCategorySlug(product.category, categories);
   const specs = CATEGORY_SPECS[categorySlug] || CATEGORY_SPECS[product.category?.slug] || CATEGORY_SPECS[product.category] || [];
 
   // rating > 0 to avoid rendering "0"
@@ -142,14 +128,14 @@ const ProductDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Images */}
           <div className="flex flex-col gap-3">
-            <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden aspect-square flex items-center justify-center">
+            <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden aspect-square flex items-center justify-center group">
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                 {(product.isNew || product.featured) && <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">{product.isNew ? "NEW" : "FEATURED"}</span>}
                 {discount > 0 && <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">-{discount}%</span>}
                 {!product.inStock && <span className="bg-gray-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">Sold Out</span>}
               </div>
               {currentSrc ? (
-                <img src={currentSrc} alt={product.name} className="w-full h-full object-cover" onError={() => setImgErrors((p) => ({ ...p, [activeImg]: true }))} />
+                <img src={currentSrc} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" onError={() => setImgErrors((p) => ({ ...p, [activeImg]: true }))} />
               ) : isEmojiImage ? (
                 <span className="text-[120px] select-none">{product.image}</span>
               ) : (

@@ -1,20 +1,31 @@
-import { useState } from "react";
-import { ShoppingCart, Star, Check } from "lucide-react";
+import { memo, useState } from "react";
+import { Eye, Heart, ShoppingCart, Star, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
+import { getCategoryLabel } from "../utils/category";
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, onQuickView, compact = false }) => {
   const [addedToCart, setAdded] = useState(false);
   const [imgError, setImgError] = useState(false);
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { categories } = useProducts();
+  const { categories, wishlist, toggleWishlist } = useProducts();
+
+  const productId = String(product._id || product.id);
+  const isWishlisted = wishlist.includes(productId);
 
   const mrp = product.mrp || product.originalPrice || 0;
   const discount = mrp > product.price
     ? Math.round(((mrp - product.price) / mrp) * 100)
     : 0;
+
+  const badges = [];
+  if (product.isNew) badges.push({ label: "New", tone: "blue" });
+  if (product.featured) badges.push({ label: "Featured", tone: "indigo" });
+  if (product.bestseller || (product.reviews || 0) >= 25 || (product.rating || 0) >= 4.7) badges.push({ label: "Bestseller", tone: "amber" });
+  if (discount > 0) badges.push({ label: `${discount}% OFF`, tone: "rose" });
+  if (!product.inStock) badges.push({ label: "Sold Out", tone: "slate" });
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
@@ -24,27 +35,24 @@ const ProductCard = ({ product }) => {
     addToCart(product);
   };
 
-  // Resolve category name from populated object, slug, or _id lookup
-  const getCategoryLabel = (cat) => {
-    if (!cat) return "";
-    if (typeof cat === "object") return cat.name || cat.label || "";
-    const SLUG_MAP = { steel: "Stainless Steel", copper: "Copper", brass: "Pital · Brass", pooja: "Pooja Essentials", appliances: "Home Appliances" };
-    if (SLUG_MAP[cat]) return SLUG_MAP[cat];
-    // Raw _id — look up in context
-    const found = categories?.find((c) => c._id === cat || c.id === cat);
-    return found?.name || found?.label || "";
-  };
-
-  const categoryLabel = getCategoryLabel(product.category);
+  const categoryLabel = getCategoryLabel(product.category, categories);
   const hasRealImage = product.image && product.image.startsWith("http") && !imgError;
   const hasRating = product.rating > 0;
+  const cardPadding = compact ? "p-4" : "p-5";
+
+  const badgeClass = {
+    blue: "bg-blue-600/95 text-white",
+    amber: "bg-amber-500/95 text-white",
+    rose: "bg-rose-500/95 text-white",
+    slate: "bg-slate-800/95 text-white",
+    indigo: "bg-indigo-600/95 text-white",
+  };
 
   return (
     <div
-      onClick={() => navigate(`/products/${product._id || product.id}`)}
-      className="bg-white rounded-[1.5rem] border border-slate-100 overflow-hidden group cursor-pointer hover:border-slate-200 hover:shadow-2xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 flex flex-col relative"
+      onClick={() => navigate(`/products/${productId}`)}
+      className="bg-white rounded-[1.4rem] border border-slate-100 overflow-hidden group cursor-pointer hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-1 transition-all duration-300 flex flex-col relative"
     >
-      {/* ── Image Section ── */}
       <div className="relative bg-slate-50 overflow-hidden aspect-square w-full flex-shrink-0">
         {hasRealImage ? (
           <img
@@ -62,30 +70,46 @@ const ProductCard = ({ product }) => {
           </div>
         )}
 
-        {/* ── Badges ── */}
         <div className="absolute top-3 left-3 flex flex-col gap-2 z-10 items-start">
-          {(product.isNew || product.featured) && (
-            <span className="bg-blue-600/95 backdrop-blur-sm text-white text-[10px] font-extrabold px-3 py-1.5 rounded-full tracking-wider uppercase shadow-sm">
-              {product.isNew ? "New Arrival" : "Featured"}
+          {badges.slice(0, 2).map((badge) => (
+            <span
+              key={badge.label}
+              className={`backdrop-blur-sm text-[10px] font-extrabold px-3 py-1.5 rounded-full tracking-wider uppercase shadow-sm ${badgeClass[badge.tone]}`}
+            >
+              {badge.label}
             </span>
-          )}
-          {discount > 0 && (
-            <span className="bg-rose-500/95 backdrop-blur-sm text-white text-[10px] font-extrabold px-3 py-1.5 rounded-full tracking-wider shadow-sm">
-              -{discount}% OFF
-            </span>
-          )}
-          {!product.inStock && (
-            <span className="bg-slate-800/95 backdrop-blur-sm text-white text-[10px] font-extrabold px-3 py-1.5 rounded-full tracking-wider shadow-sm">
-              Sold Out
-            </span>
+          ))}
+        </div>
+
+        <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(productId);
+            }}
+            aria-label="Toggle wishlist"
+            className={`w-9 h-9 rounded-full border backdrop-blur-sm transition-all ${isWishlisted ? "bg-rose-50 border-rose-200 text-rose-600" : "bg-white/90 border-slate-200 text-slate-500 hover:text-rose-600"}`}
+          >
+            <Heart className={`w-4 h-4 mx-auto ${isWishlisted ? "fill-rose-500" : ""}`} />
+          </button>
+          {onQuickView && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickView(product);
+              }}
+              aria-label="Quick view"
+              className="w-9 h-9 rounded-full border bg-white/90 border-slate-200 text-slate-500 hover:text-blue-700"
+            >
+              <Eye className="w-4 h-4 mx-auto" />
+            </button>
           )}
         </div>
       </div>
 
-      {/* ── Content Section ── */}
-      <div className="p-5 flex flex-col flex-1">
+      <div className={`${cardPadding} flex flex-col flex-1`}>
         {categoryLabel && (
-          <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest mb-2">
+          <p className="text-[10px] font-extrabold text-blue-700 uppercase tracking-widest mb-2">
             {categoryLabel}
           </p>
         )}
@@ -94,9 +118,8 @@ const ProductCard = ({ product }) => {
           {product.name}
         </h3>
 
-        {/* ── Ratings ── */}
         {hasRating && (
-          <div className="flex items-center gap-2 mb-4">
+          <div className={`flex items-center gap-2 ${compact ? "mb-3" : "mb-4"}`}>
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star 
@@ -111,8 +134,7 @@ const ProductCard = ({ product }) => {
           </div>
         )}
 
-        {/* ── Price Area ── */}
-        <div className="flex flex-wrap items-end gap-2 mt-auto mb-5">
+        <div className={`flex flex-wrap items-end gap-2 mt-auto ${compact ? "mb-4" : "mb-5"}`}>
           <span className="text-xl font-black text-slate-900 tracking-tight">
             ₹{product.price.toLocaleString("en-IN")}
           </span>
@@ -128,7 +150,6 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* ── Action Button ── */}
         <button
           onClick={handleAddToCart}
           disabled={!product.inStock}
@@ -157,4 +178,4 @@ const ProductCard = ({ product }) => {
   );
 };
 
-export default ProductCard;
+export default memo(ProductCard);

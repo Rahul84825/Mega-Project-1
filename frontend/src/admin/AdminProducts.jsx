@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle, Pencil, Trash2, Search, ToggleLeft, ToggleRight, Package } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Search, ToggleLeft, ToggleRight, Package, Star, Sparkles, BadgeCheck } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 
 const AdminProducts = () => {
-  const { products, categories, deleteProduct, toggleStock } = useProducts();
+  const { products, categories, deleteProduct, toggleStock, toggleFeatured, toggleBestseller, toggleIsNew } = useProducts();
   const navigate = useNavigate();
   const [search, setSearch]               = useState("");
   const [filterCat, setFilterCat]         = useState("all");
@@ -95,7 +95,7 @@ const AdminProducts = () => {
                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Price</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">MRP</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Stock Status</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Badges</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Labels</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
@@ -180,6 +180,47 @@ const AdminProducts = () => {
                             </span>
                           )}
                           {!product.featured && !product.isNew && <span className="text-slate-400">—</span>}
+                                              {/* Labels — clickable toggles */}
+                                              <td className="px-6 py-3">
+                                                <div className="flex gap-1.5 flex-wrap">
+                                                  <button
+                                                    onClick={() => toggleFeatured(pid(product))}
+                                                    title="Toggle Featured"
+                                                    className={`flex items-center gap-1 px-2 py-0.5 border text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors
+                                                      ${product.featured
+                                                        ? "bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
+                                                        : "bg-white text-slate-400 border-slate-200 hover:border-amber-300 hover:text-amber-600"
+                                                      }`}
+                                                  >
+                                                    <Star className="w-2.5 h-2.5" />
+                                                    Featured
+                                                  </button>
+                                                  <button
+                                                    onClick={() => toggleBestseller(pid(product))}
+                                                    title="Toggle Bestseller"
+                                                    className={`flex items-center gap-1 px-2 py-0.5 border text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors
+                                                      ${product.bestseller
+                                                        ? "bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100"
+                                                        : "bg-white text-slate-400 border-slate-200 hover:border-orange-300 hover:text-orange-600"
+                                                      }`}
+                                                  >
+                                                    <BadgeCheck className="w-2.5 h-2.5" />
+                                                    Best
+                                                  </button>
+                                                  <button
+                                                    onClick={() => toggleIsNew(pid(product))}
+                                                    title="Toggle New"
+                                                    className={`flex items-center gap-1 px-2 py-0.5 border text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors
+                                                      ${product.isNew
+                                                        ? "bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
+                                                        : "bg-white text-slate-400 border-slate-200 hover:border-blue-300 hover:text-blue-600"
+                                                      }`}
+                                                  >
+                                                    <Sparkles className="w-2.5 h-2.5" />
+                                                    New
+                                                  </button>
+                                                </div>
+                                              </td>
                         </div>
                       </td>
 
