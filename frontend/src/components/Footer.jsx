@@ -231,9 +231,16 @@ const Footer = () => {
               </span>
               . All rights reserved.
             </p>
+          
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-2 sm:mt-0">
             <p className="text-xs sm:text-sm font-medium text-slate-400 flex items-center gap-1.5">
               Made with <span className="text-rose-500 animate-pulse">❤️</span> in Maharashtra
             </p>
+            <div className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block" />
+            <NavLink to="/built-by" className="text-xs sm:text-sm font-semibold text-slate-400 hover:text-blue-500 transition-colors">
+              Who built this?
+            </NavLink>
+          </div>
           </div>
         </div>
       </div>

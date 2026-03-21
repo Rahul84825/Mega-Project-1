@@ -36,7 +36,7 @@ const Contact = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    name: "", email: "", phone: "", message: "",
+    name: "", phone: "", message: "",
   });
   const [errors,  setErrors]  = useState({});
   const [loading, setLoading] = useState(false);
@@ -46,8 +46,7 @@ const Contact = () => {
   const validate = () => {
     const e = {};
     if (!form.name.trim())    e.name    = "Name is required";
-    if (!form.email.trim())   e.email   = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Enter a valid email address";
+    if (!form.phone.trim())   e.phone   = "Phone number is required";
     if (form.phone && !/^[6-9]\d{9}$/.test(form.phone)) e.phone = "Enter a valid 10-digit mobile number";
     if (!form.message.trim()) e.message = "Message is required";
     else if (form.message.trim().length < 10) e.message = "Message must be at least 10 characters";
@@ -71,13 +70,13 @@ const Contact = () => {
     try {
       await api.post("/api/contact", {
         name:    form.name,
-        email:   form.email,
+        email:   "no-reply@store.com", // Fallback in case your backend strictly requires an email field
         phone:   form.phone ? `+91${form.phone}` : "",
         subject: "Store Enquiry from Contact Page",
         message: form.message,
       });
       setSuccess(true);
-      setForm({ name: "", email: "", phone: "", message: "" });
+      setForm({ name: "", phone: "", message: "" });
     } catch (err) {
       console.error("Contact error:", err);
       setErrors({ submit: err.message || "Something went wrong. Please try again or call us directly." });
@@ -95,8 +94,8 @@ const Contact = () => {
         
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 text-center sm:text-left">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">Contact Us</h1>
-          <p className="text-slate-500 text-sm sm:text-base max-w-xl leading-relaxed">
-            We’re here to help with your orders and queries. Reach out to us through any of the channels below.
+          <p className="text-slate-500 text-sm sm:text-base max-w-xl leading-relaxed font-medium">
+            We’re here to help with your orders and queries
           </p>
         </div>
       </div>
@@ -113,7 +112,7 @@ const Contact = () => {
               <div>
                 <h3 className="text-sm font-bold text-blue-900 mb-1">Quick Support</h3>
                 <p className="text-[13px] text-blue-800/80 leading-relaxed">
-                  For bulk orders, return requests, or urgent product inquiries, contact us directly on WhatsApp or phone for the fastest response.
+                  For bulk orders or product inquiries, contact us directly on WhatsApp or phone.
                 </p>
               </div>
             </div>
@@ -140,7 +139,7 @@ const Contact = () => {
                 <div>
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Store Location</p>
                   <p className="text-sm font-bold text-slate-900 leading-snug">Mahalaxmi Steels & Home Appliance</p>
-                  <p className="text-[13px] text-slate-500 mt-1">Ekta Nagar, Akurdi Gaothan, Pune, Maharashtra 411035</p>
+                  <p className="text-[13px] text-slate-500 mt-1">Akurdi, Pune</p>
                 </div>
               </div>
 
@@ -203,10 +202,6 @@ const Contact = () => {
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-bold select-none">+91</span>
                     <input type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="98765 43210" maxLength={10} className={`${inputClass(errors.phone)} pl-12`} />
                   </div>
-                </Field>
-
-                <Field icon={Mail} label="Email Address" required error={errors.email}>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="rahul@email.com" className={inputClass(errors.email)} />
                 </Field>
 
                 <Field icon={MessageSquare} label="Your Message" required error={errors.message}>
