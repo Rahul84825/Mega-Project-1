@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  ArrowLeft, ShoppingCart, Star, BadgeCheck,
+  ArrowLeft, ShoppingCart,
   Truck, ShieldCheck, RotateCcw, Minus, Plus,
   ChevronRight, PackageX,
 } from "lucide-react";
@@ -10,14 +10,6 @@ import { api } from "../utils/api";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
 import { getCategoryLabel, getCategorySlug } from "../utils/category";
-
-const StarRating = ({ rating }) => (
-  <div className="flex">
-    {[1,2,3,4,5].map((star) => (
-      <Star key={star} className={`w-4 h-4 ${star <= Math.floor(rating) ? "fill-amber-400 text-amber-400" : "fill-gray-100 text-gray-300"}`} />
-    ))}
-  </div>
-);
 
 const ProductNotFound = () => (
   <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
@@ -55,17 +47,7 @@ const ProductDetails = () => {
 
   useEffect(() => {
     if (!product) return;
-
-    const safeVariants = Array.isArray(product.variants) ? product.variants : [];
-    if (!product.has_variants || safeVariants.length === 0) {
-      setSelectedVariant(null);
-      setActiveImg(0);
-      setImgErrors({});
-      return;
-    }
-
-    const firstAvailable = safeVariants.find((v) => Number(v?.stock || 0) > 0) || safeVariants[0];
-    setSelectedVariant(firstAvailable || null);
+    setSelectedVariant(null);
     setActiveImg(0);
     setImgErrors({});
   }, [product]);
@@ -117,6 +99,7 @@ const ProductDetails = () => {
   const normalizedSelectedVariant = hasVariants
     ? safeVariants.find((v) => (v._id || v.id) === (selectedVariant?._id || selectedVariant?.id)) || null
     : null;
+  const requiresVariantSelection = hasVariants && !normalizedSelectedVariant;
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
   if (error || !product) return <ProductNotFound />;
@@ -142,8 +125,12 @@ const ProductDetails = () => {
   const currentSrc = hasImages && !imgErrors[safeActiveImg] ? allImages[safeActiveImg] : null;
   const isEmojiImage = product.image && !product.image.startsWith("http");
 
-  const displayPrice = Math.round(normalizedSelectedVariant?.price ?? product.price ?? 0);
-  const displayMrp = Math.round(normalizedSelectedVariant?.mrp ?? product.mrp ?? product.originalPrice ?? displayPrice);
+  const displayPrice = Math.round(
+    requiresVariantSelection ? 0 : (normalizedSelectedVariant?.price ?? product.price ?? 0)
+  );
+  const displayMrp = Math.round(
+    requiresVariantSelection ? 0 : (normalizedSelectedVariant?.mrp ?? product.mrp ?? product.originalPrice ?? displayPrice)
+  );
   const discount = displayMrp > displayPrice ? Math.round(((displayMrp - displayPrice) / displayMrp) * 100) : 0;
   const savings = displayMrp > displayPrice ? Math.round(displayMrp - displayPrice) : 0;
   const categoryLabel = getCategoryLabel(product.category, categories);
@@ -152,14 +139,12 @@ const ProductDetails = () => {
     ? Object.entries(product.specifications).map(([label, value]) => ({ label, value }))
     : [];
 
-  // rating > 0 to avoid rendering "0"
-  const hasRating = product.rating > 0;
-  
-  // For variant products, stock must come from selected variant.
   const variantStock = Number(normalizedSelectedVariant?.stock ?? 0);
   const productStock = Number(product.stock ?? 0);
-  const displayStock = hasVariants ? variantStock : productStock;
-  const displayInStock = hasVariants ? displayStock > 0 : (product.inStock ?? displayStock > 0);
+  const displayStock = hasVariants ? (normalizedSelectedVariant ? variantStock : null) : productStock;
+  const displayInStock = hasVariants
+    ? (normalizedSelectedVariant ? displayStock > 0 : false)
+    : (product.inStock ?? productStock > 0);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -218,30 +203,29 @@ const ProductDetails = () => {
             {categoryLabel && <span className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">{categoryLabel}</span>}
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 leading-tight">{product.name}</h1>
 
-            {/* Rating — only show if rating > 0 */}
-            {hasRating && (
-              <div className="flex items-center gap-3 mb-4">
-                <StarRating rating={product.rating} />
-                <span className="text-sm font-semibold text-gray-700">{product.rating}</span>
-                {product.reviews > 0 && <span className="text-sm text-gray-400">({product.reviews} reviews)</span>}
-                {product.rating >= 4.7 && <span className="flex items-center gap-1 text-xs text-blue-600 font-semibold"><BadgeCheck className="w-3.5 h-3.5" /> Top Rated</span>}
+            {requiresVariantSelection ? (
+              <div className="mb-6 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3">
+                <p className="text-sm font-semibold text-blue-900">Select a variant to view price and stock</p>
+                <p className="text-xs text-blue-700 mt-1">Please select a variant</p>
               </div>
+            ) : (
+              <>
+                <div className="flex items-baseline gap-3 mb-2">
+                  <span className="text-3xl font-bold text-gray-900">₹{displayPrice.toLocaleString("en-IN")}</span>
+                  {displayMrp > displayPrice && (
+                    <span className="text-lg text-gray-400 line-through">₹{displayMrp.toLocaleString("en-IN")}</span>
+                  )}
+                </div>
+                {savings > 0 && <p className="text-sm font-semibold text-green-600 mb-4">You save ₹{savings.toLocaleString("en-IN")} ({discount}% off)</p>}
+
+                <div className="flex items-center gap-2 mb-6">
+                  <span className={`w-2.5 h-2.5 rounded-full ${displayInStock ? "bg-green-500" : "bg-red-400"}`} />
+                  <span className={`text-sm font-semibold ${displayInStock ? "text-green-600" : "text-red-500"}`}>
+                    {displayInStock ? `In Stock${displayStock ? ` - ${displayStock} available` : ""}` : "Out of Stock"}
+                  </span>
+                </div>
+              </>
             )}
-
-            <div className="flex items-baseline gap-3 mb-2">
-              <span className="text-3xl font-bold text-gray-900">₹{displayPrice.toLocaleString("en-IN")}</span>
-              {displayMrp > displayPrice && (
-                <span className="text-lg text-gray-400 line-through">₹{displayMrp.toLocaleString("en-IN")}</span>
-              )}
-            </div>
-            {savings > 0 && <p className="text-sm font-semibold text-green-600 mb-4">You save ₹{savings.toLocaleString("en-IN")} ({discount}% off)</p>}
-
-            <div className="flex items-center gap-2 mb-6">
-              <span className={`w-2.5 h-2.5 rounded-full ${displayInStock ? "bg-green-500" : "bg-red-400"}`} />
-              <span className={`text-sm font-semibold ${displayInStock ? "text-green-600" : "text-red-500"}`}>
-                {displayInStock ? `In Stock${displayStock ? ` - ${displayStock} available` : ""}` : "Out of Stock"}
-              </span>
-            </div>
 
             {product.description && <p className="text-sm text-gray-600 leading-relaxed mb-6 border-t border-gray-100 pt-5">{product.description}</p>}
 
@@ -260,7 +244,7 @@ const ProductDetails = () => {
                         key={variantId}
                         onClick={() => {
                           if (isOutOfStock) return;
-                          setSelectedVariant(variant);
+                          setSelectedVariant(isSelected ? null : variant);
                           setActiveImg(0);
                           setImgErrors({});
                         }}
@@ -279,6 +263,9 @@ const ProductDetails = () => {
                     );
                   })}
                 </div>
+                {!normalizedSelectedVariant && (
+                  <p className="text-xs text-gray-500 mt-3">Please select a variant</p>
+                )}
                 {normalizedSelectedVariant && (
                   <p className="text-xs text-gray-600 mt-3">
                     Stock: <span className={displayStock > 0 ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
@@ -289,7 +276,7 @@ const ProductDetails = () => {
               </div>
             )}
 
-            {displayInStock && (
+            {(!hasVariants || normalizedSelectedVariant) && displayInStock && (
               <div className="flex items-center gap-4 mb-5">
                 <span className="text-sm font-semibold text-gray-700">Quantity:</span>
                 <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
@@ -300,14 +287,15 @@ const ProductDetails = () => {
                 <span className="text-xs text-gray-400">Max 10 per order</span>
               </div>
             )}
-            {displayInStock && qty > 1 && <p className="text-xs text-gray-500 mb-4">Total: <span className="font-bold text-gray-800">₹{(displayPrice * qty).toLocaleString("en-IN")}</span></p>}
+            {(!hasVariants || normalizedSelectedVariant) && displayInStock && qty > 1 && <p className="text-xs text-gray-500 mb-4">Total: <span className="font-bold text-gray-800">₹{(displayPrice * qty).toLocaleString("en-IN")}</span></p>}
 
             <button onClick={handleAddToCart} disabled={!displayInStock || (hasVariants && !normalizedSelectedVariant)}
               className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl text-base font-bold transition-all duration-300 mb-3
                 ${added ? "bg-green-500 text-white scale-95" : (displayInStock && (!hasVariants || normalizedSelectedVariant)) ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg active:scale-95" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}>
               <ShoppingCart className="w-5 h-5" />
-              {added ? `Added ${qty > 1 ? `(${qty})` : ""} to Cart!` : displayInStock ? "Add to Cart" : "Out of Stock"}
+              {added ? `Added ${qty > 1 ? `(${qty})` : ""} to Cart!` : requiresVariantSelection ? "Select a Variant" : displayInStock ? "Add to Cart" : "Out of Stock"}
             </button>
+            {requiresVariantSelection && <p className="text-xs text-gray-500 mb-4">Please select a variant before adding this item to your cart.</p>}
             <button onClick={() => navigate(-1)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
