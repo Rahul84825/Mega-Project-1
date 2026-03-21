@@ -112,14 +112,14 @@ const ProductDetails = () => {
     setTimeout(() => setAdded(false), 2000);
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
-  if (error || !product) return <ProductNotFound />;
-
-  const safeVariants = useMemo(() => (Array.isArray(product.variants) ? product.variants : []), [product.variants]);
-  const hasVariants = !!product.has_variants && safeVariants.length > 0;
+  const safeVariants = useMemo(() => (Array.isArray(product?.variants) ? product.variants : []), [product]);
+  const hasVariants = !!product?.has_variants && safeVariants.length > 0;
   const normalizedSelectedVariant = hasVariants
     ? safeVariants.find((v) => (v._id || v.id) === (selectedVariant?._id || selectedVariant?.id)) || null
     : null;
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" /></div>;
+  if (error || !product) return <ProductNotFound />;
 
   // Build gallery: selected variant images first, then product-level images.
   const allImages = [];
