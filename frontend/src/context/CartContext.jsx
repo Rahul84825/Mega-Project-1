@@ -6,7 +6,7 @@ const CartContext = createContext(null);
 export const CartProvider = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
 
-  const getItemKey = (itemId, variantId = null) => (variantId ? `${itemId}-${variantId}` : `${itemId}`);
+  const getItemKey = (itemId) => `${itemId}`;
 
   // ── Derive a stable storage key per user ──────────────────────────
   // - Logged in  → "cart_<userId>"   (each user gets their own cart)
@@ -51,18 +51,14 @@ export const CartProvider = ({ children }) => {
   }, [cartItems, user, authLoading]);
 
   // ── Add to cart ───────────────────────────────────────────────────
-  const addToCart = (product, variant = null) => {
+  const addToCart = (product) => {
     setCartItems((prev) => {
       const productId = product._id || product.id;
-      const variantId = variant?._id || variant?.id || null;
       
-      // For variant products, key is product+variant. For regular, just product
-      const cartItemKey = variantId ? `${productId}-${variantId}` : productId;
+      const cartItemKey = productId;
       
       const existingIndex = prev.findIndex((item) => {
-        const itemKey = item.variant_id 
-          ? `${item._id || item.id}-${item.variant_id}`
-          : (item._id || item.id);
+        const itemKey = item._id || item.id;
         return itemKey === cartItemKey;
       });
       
@@ -72,17 +68,14 @@ export const CartProvider = ({ children }) => {
         return updated;
       }
       
-      // Use variant price if available, otherwise product price
-      const price = variant?.price ?? product.price;
-      const stock = variant?.stock ?? product.stock;
+      const price = product.price;
+      const stock = product.stock;
       
       return [
         ...prev,
         {
           ...product,
           product_id: productId,
-          variant_id: variantId,
-          variant: variant || null,
           quantity: 1,
           price,
           stock,
@@ -94,12 +87,12 @@ export const CartProvider = ({ children }) => {
   };
 
   // ── Change quantity ───────────────────────────────────────────────
-  const updateQuantity = (id, newQty, variantId = null) => {
-    if (newQty < 1) { removeFromCart(id, variantId); return; }
-    const targetKey = getItemKey(id, variantId);
+  const updateQuantity = (id, newQty) => {
+    if (newQty < 1) { removeFromCart(id); return; }
+    const targetKey = getItemKey(id);
     setCartItems((prev) =>
       prev.map((item) =>
-        getItemKey(item._id || item.id, item.variant_id || null) === targetKey
+        getItemKey(item._id || item.id) === targetKey
           ? { ...item, quantity: Math.min(newQty, 10) }
           : item
       )
@@ -107,10 +100,10 @@ export const CartProvider = ({ children }) => {
   };
 
   // ── Remove item ───────────────────────────────────────────────────
-  const removeFromCart = (id, variantId = null) =>
+  const removeFromCart = (id) =>
     setCartItems((prev) => {
-      const targetKey = getItemKey(id, variantId);
-      const next = prev.filter((item) => getItemKey(item._id || item.id, item.variant_id || null) !== targetKey);
+      const targetKey = getItemKey(id);
+      const next = prev.filter((item) => getItemKey(item._id || item.id) !== targetKey);
       return next;
     });
 
@@ -120,9 +113,9 @@ export const CartProvider = ({ children }) => {
   // ── Derived values ────────────────────────────────────────────────
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = Math.round(cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0));
-  const isInCart  = (id, variantId = null) => {
-    const targetKey = getItemKey(id, variantId);
-    return cartItems.some((item) => getItemKey(item._id || item.id, item.variant_id || null) === targetKey);
+  const isInCart  = (id) => {
+    const targetKey = getItemKey(id);
+    return cartItems.some((item) => getItemKey(item._id || item.id) === targetKey);
   };
 
   return (

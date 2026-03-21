@@ -1,6 +1,5 @@
 const asyncHandler = require("express-async-handler");
 const Product      = require("../models/Product");
-const Variant      = require("../models/Variant");
 const Category     = require("../models/Category");
 const mongoose     = require("mongoose");
 
@@ -44,13 +43,6 @@ const normalizeImageArray = (images, image) => {
   return normalized;
 };
 
-const normalizeVariantImages = (images) => {
-  if (!Array.isArray(images)) return [];
-  return images
-    .map((img) => (typeof img === "string" ? img.trim() : ""))
-    .filter(Boolean);
-};
-
 // ── GET /api/products ─────────────────────────────────────────────────────────
 const getProducts = asyncHandler(async (req, res) => {
   const { category, search, sortBy, inStockOnly, page = 1, limit = 50 } = req.query;
@@ -85,18 +77,7 @@ const getProducts = asyncHandler(async (req, res) => {
     .skip((+page - 1) * +limit)
     .limit(+limit);
 
-  // Populate variants for each product that has them
-  const populated = await Promise.all(
-    products.map(async (prod) => {
-      if (prod.has_variants) {
-        const variants = await Variant.find({ product_id: prod._id }).sort({ createdAt: 1 });
-        return { ...prod.toObject(), variants };
-      }
-      return prod.toObject();
-    })
-  );
-
-  res.json({ products: populated, total, page: +page, pages: Math.ceil(total / +limit) });
+  res.json({ products, total, page: +page, pages: Math.ceil(total / +limit) });
 });
 
 // ── GET /api/products/:id ─────────────────────────────────────────────────────
@@ -104,18 +85,12 @@ const getProductById = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id).populate("category_id", "name is_active");
   if (!product) { res.status(404); throw new Error("Product not found"); }
   
-  // Load variants if product has them
-  let variants = [];
-  if (product.has_variants) {
-    variants = await Variant.find({ product_id: product._id }).sort({ createdAt: 1 });
-  }
-  
-  res.json({ ...product.toObject(), variants });
+  res.json(product);
 });
 
 // ── POST /api/products (admin) ────────────────────────────────────────────────
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, description, category, category_id, price, originalPrice, inStock, specifications, has_variants, variants } = req.body;
+  const { name, description, category, category_id, price, originalPrice, inStock, specifications } = req.body;
   const resolvedCategoryId = category_id || category;
 
   if (!name || !resolvedCategoryId || !price || !originalPrice) {
@@ -145,26 +120,9 @@ const createProduct = asyncHandler(async (req, res) => {
     stock:    req.body.stock !== undefined ? +req.body.stock : 0,
     tags:     req.body.tags  || [],
     specifications,
-    has_variants: !!has_variants,
   });
 
-  // Create variants if has_variants is true
-  let createdVariants = [];
-  if (has_variants && Array.isArray(variants) && variants.length > 0) {
-    createdVariants = await Variant.insertMany(
-      variants.map((v) => ({
-        product_id: product._id,
-        label: v.label || "",
-        price: Math.round(+v.price || 0),
-        mrp: v.mrp ? Math.round(+v.mrp) : undefined,
-        stock: v.stock !== undefined ? +v.stock : 0,
-        barcode: v.barcode || "",
-        images: normalizeVariantImages(v.images),
-      }))
-    );
-  }
-
-  res.status(201).json({ ...product.toObject(), variants: createdVariants });
+  res.status(201).json(product);
 });
 
 // ── PUT /api/products/:id (admin) ─────────────────────────────────────────────
@@ -173,7 +131,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (!product) { res.status(404); throw new Error("Product not found"); }
 
   const fields = ["name","description","price","originalPrice","mrp",
-                  "image","images","inStock","brand","stock","tags","specifications","has_variants"];
+                  "image","images","inStock","brand","stock","tags","specifications"];
   fields.forEach((f) => { 
     if (req.body[f] !== undefined) {
       // Round price fields to ensure integer values
@@ -206,32 +164,8 @@ const updateProduct = asyncHandler(async (req, res) => {
 
   const updated = await product.save();
 
-  // Handle variant updates
-  let variants = [];
-  if (req.body.variants !== undefined && Array.isArray(req.body.variants)) {
-    // Delete existing variants and create new ones
-    await Variant.deleteMany({ product_id: updated._id });
-    
-    if (req.body.variants.length > 0) {
-      variants = await Variant.insertMany(
-        req.body.variants.map((v) => ({
-          product_id: updated._id,
-          label: v.label || "",
-          price: Math.round(+v.price || 0),
-          mrp: v.mrp ? Math.round(+v.mrp) : undefined,
-          stock: v.stock !== undefined ? +v.stock : 0,
-          barcode: v.barcode || "",
-          images: normalizeVariantImages(v.images),
-        }))
-      );
-    }
-  } else if (updated.has_variants && !variants.length) {
-    // If not updating variants but product has them, fetch existing ones
-    variants = await Variant.find({ product_id: updated._id }).sort({ createdAt: 1 });
-  }
-
   const populated = await Product.findById(updated._id).populate("category_id", "name is_active");
-  res.json({ ...populated.toObject(), variants });
+  res.json(populated);
 });
 
 // ── DELETE /api/products/:id (admin) ──────────────────────────────────────────
@@ -239,8 +173,6 @@ const deleteProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
   if (!product) { res.status(404); throw new Error("Product not found"); }
   
-  // Delete associated variants
-  await Variant.deleteMany({ product_id: product._id });
   await product.deleteOne();
   
   res.json({ message: "Product deleted" });
@@ -255,61 +187,4 @@ const toggleStock = asyncHandler(async (req, res) => {
   res.json({ product: { _id: product._id, inStock: product.inStock } });
 });
 
-// ── POST /api/products/:id/variants (admin) ────────────────────────────────────
-const createVariant = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-  if (!product) { res.status(404); throw new Error("Product not found"); }
-
-  const { label, price, mrp, stock, barcode, images } = req.body;
-  if (!label || price === undefined) {
-    res.status(400);
-    throw new Error("label and price are required");
-  }
-
-  const variant = await Variant.create({
-    product_id: product._id,
-    label,
-    price: Math.round(+price),
-    mrp: mrp ? Math.round(+mrp) : undefined,
-    stock: stock !== undefined ? +stock : 0,
-    barcode: barcode || "",
-    images: normalizeVariantImages(images),
-  });
-
-  res.status(201).json(variant);
-});
-
-// ── PUT /api/variants/:id (admin) ──────────────────────────────────────────────
-const updateVariant = asyncHandler(async (req, res) => {
-  const variant = await Variant.findById(req.params.id);
-  if (!variant) { res.status(404); throw new Error("Variant not found"); }
-
-  const fields = ["label", "price", "mrp", "stock", "barcode", "images"];
-  fields.forEach((f) => {
-    if (req.body[f] !== undefined) {
-      if (f === "price" || f === "mrp") {
-        variant[f] = Math.round(+req.body[f]);
-      } else if (f === "stock") {
-        variant[f] = +req.body[f];
-      } else if (f === "images") {
-        variant.images = normalizeVariantImages(req.body.images);
-      } else {
-        variant[f] = req.body[f];
-      }
-    }
-  });
-
-  await variant.save();
-  res.json(variant);
-});
-
-// ── DELETE /api/variants/:id (admin) ───────────────────────────────────────────
-const deleteVariant = asyncHandler(async (req, res) => {
-  const variant = await Variant.findById(req.params.id);
-  if (!variant) { res.status(404); throw new Error("Variant not found"); }
-  
-  await variant.deleteOne();
-  res.json({ message: "Variant deleted" });
-});
-
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct, toggleStock, createVariant, updateVariant, deleteVariant };
+module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct, toggleStock };
