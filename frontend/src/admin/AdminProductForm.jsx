@@ -5,7 +5,7 @@ import { useProducts } from "../context/ProductContext";
 import { api } from "../utils/api";
 
 const EMPTY_FORM = {
-  name: "", category: "", price: "", mrp: "",
+  name: "", category: "", original_price: "", discount_percentage: 0,
   description: "", image: "", images: [], inStock: true,
   brand: "", stock: "", tags: "",
 };
@@ -34,8 +34,12 @@ const AdminProductForm = ({ mode = "add" }) => {
         setForm({
           name:        product.name        || "",
           category:    product.category?._id || product.category || "",
-          price:       product.price       || "",
-          mrp:         product.mrp || product.originalPrice || "",
+          original_price: product.original_price || product.mrp || product.originalPrice || "",
+          discount_percentage: product.discount_percentage ?? (
+            (product.mrp || product.originalPrice) && product.price && (product.mrp || product.originalPrice) > product.price
+              ? Math.round((((product.mrp || product.originalPrice) - product.price) / (product.mrp || product.originalPrice)) * 100)
+              : 0
+          ),
           description: product.description || "",
           image:       product.images?.[0] || product.image || "",
           images:      product.images?.length ? product.images : (product.image ? [product.image] : []),
@@ -57,7 +61,8 @@ const AdminProductForm = ({ mode = "add" }) => {
   const validate = () => {
     const e = {};
     if (!(form.name || "").trim())                              e.name     = "Product name is required";
-    if (!form.price || isNaN(form.price) || +form.price <= 0) e.price = "Enter a valid price";
+    if (!form.original_price || isNaN(form.original_price) || +form.original_price <= 0) e.original_price = "Enter a valid original price";
+    if (form.discount_percentage !== "" && (isNaN(form.discount_percentage) || +form.discount_percentage < 0 || +form.discount_percentage > 100)) e.discount_percentage = "Discount must be between 0 and 100";
     if (!form.category)                                 e.category = "Category is required";
     return e;
   };
@@ -140,9 +145,12 @@ const AdminProductForm = ({ mode = "add" }) => {
 
     const payload = {
       ...form,
-      price:         +form.price,
-      mrp:           +form.mrp || +form.price,
-      originalPrice: +form.mrp || +form.price,
+      original_price: +form.original_price,
+      discount_percentage: +form.discount_percentage || 0,
+      final_price:   finalPrice,
+      price:         finalPrice,
+      mrp:           +form.original_price,
+      originalPrice: +form.original_price,
       stock:         +form.stock || 0,
       tags:          (form.tags || "").split(",").map((t) => t.trim()).filter(Boolean),
       image:         (form.images || [])[0] || "",
@@ -166,10 +174,12 @@ const AdminProductForm = ({ mode = "add" }) => {
     }
   };
 
-  const discount =
-    form.price && form.mrp && (+form.mrp > +form.price)
-      ? Math.round(((+form.mrp - +form.price) / +form.mrp) * 100)
-      : 0;
+  const calcFinalPrice = () => {
+    const orig = +form.original_price || 0;
+    const disc = +form.discount_percentage || 0;
+    return Math.round(orig - (orig * disc / 100));
+  };
+  const finalPrice = calcFinalPrice();
 
   const inputClass = (hasError) =>
     `w-full px-4 py-3 text-sm font-medium border rounded-xl focus:outline-none focus:bg-white focus:ring-4 transition-all shadow-inner
@@ -307,22 +317,29 @@ const AdminProductForm = ({ mode = "add" }) => {
         </div>
 
         {/* ── Pricing ── */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div>
-            <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Sale Price (₹) <span className="text-rose-500">*</span></label>
-            <input type="number" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="899" className={inputClass(errors.price)} />
-            {errors.price && <p className="text-[11px] font-bold text-rose-500 mt-1.5">{errors.price}</p>}
+            <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Original Price (MRP) ₹ <span className="text-rose-500">*</span></label>
+            <input type="number" value={form.original_price} onChange={(e) => set("original_price", e.target.value)} placeholder="1199" className={inputClass(errors.original_price)} />
+            {errors.original_price && <p className="text-[11px] font-bold text-rose-500 mt-1.5">{errors.original_price}</p>}
           </div>
           <div>
-            <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Original MRP (₹)</label>
-            <input type="number" value={form.mrp} onChange={(e) => set("mrp", e.target.value)} placeholder="1199" className={inputClass(false)} />
+            <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Discount (%)</label>
+            <input type="number" value={form.discount_percentage} onChange={(e) => set("discount_percentage", e.target.value)} placeholder="10" className={inputClass(errors.discount_percentage)} />
+            {errors.discount_percentage && <p className="text-[11px] font-bold text-rose-500 mt-1.5">{errors.discount_percentage}</p>}
+          </div>
+          <div>
+            <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Final Price (Sale) ₹</label>
+            <div className="w-full px-4 py-3 text-sm font-bold border border-slate-200 bg-slate-100 text-slate-600 rounded-xl shadow-inner select-none">
+              {finalPrice > 0 ? `₹${finalPrice.toLocaleString("en-IN")}` : "-"}
+            </div>
           </div>
         </div>
 
-        {discount > 0 && (
+        {form.discount_percentage > 0 && finalPrice > 0 && (
           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-800 px-4 py-2.5 rounded-xl text-sm font-bold">
             <Tag className="w-4 h-4 text-emerald-500" />
-            {discount}% Discount Applied <span className="text-emerald-600 font-medium ml-1">(Customer saves ₹{Math.round(+form.mrp - +form.price).toLocaleString("en-IN")})</span>
+            {form.discount_percentage}% Discount Applied <span className="text-emerald-600 font-medium ml-1">(Customer saves ₹{Math.round((+form.original_price || 0) - finalPrice).toLocaleString("en-IN")})</span>
           </div>
         )}
 

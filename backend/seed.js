@@ -17,18 +17,18 @@ const CATEGORIES = [
 ];
 
 const PRODUCTS = [
-  { name: "Stainless Steel Kadai",       category: "steel",      price: 899,  originalPrice: 1199, inStock: true,  image: "🥘", description: "Premium quality stainless steel kadai, ideal for everyday cooking." },
-  { name: "Copper Water Jug 1L",         category: "copper",     price: 650,  originalPrice: 850,  inStock: true,  image: "🏺", description: "Pure copper water jug for health benefits." },
-  { name: "Brass Puja Thali Set",        category: "pooja",      price: 1299, originalPrice: 1699, inStock: true,  image: "🪔", description: "Complete brass puja thali set for daily worship." },
-  { name: "Prestige Mixer Grinder 750W", category: "appliances", price: 3499, originalPrice: 4499, inStock: true,  image: "🔌", description: "Powerful 750W mixer grinder with 3 jars." },
-  { name: "Brass Lota Kalash 500ml",     category: "brass",      price: 420,  originalPrice: 550,  inStock: false, image: "✨", description: "Traditional brass lota for puja and daily use." },
-  { name: "SS Tiffin Box 3 Layer",       category: "steel",      price: 499,  originalPrice: 699,  inStock: true,  image: "🥘", description: "Leak-proof 3 layer stainless steel tiffin box." },
-  { name: "Copper Bottle 1.5L",          category: "copper",     price: 799,  originalPrice: 999,  inStock: true,  image: "🏺", description: "Pure copper water bottle for Ayurvedic health benefits." },
-  { name: "Gas Stove 3 Burner ISI",      category: "appliances", price: 2799, originalPrice: 3299, inStock: true,  image: "🔌", description: "ISI certified 3 burner gas stove with auto ignition." },
-  { name: "Brass Diya Set of 6",         category: "pooja",      price: 349,  originalPrice: 499,  inStock: true,  image: "🪔", description: "Beautiful brass diya set for festivals and daily puja." },
-  { name: "SS Pressure Cooker 5L",       category: "steel",      price: 1199, originalPrice: 1599, inStock: false, image: "🥘", description: "Heavy duty stainless steel pressure cooker." },
-  { name: "Pital Kadai 2L",             category: "brass",      price: 950,  originalPrice: 1200, inStock: true,  image: "✨", description: "Traditional pital (brass) kadai for authentic cooking." },
-  { name: "Electric Pressure Cooker 6L", category: "appliances", price: 4299, originalPrice: 5499, inStock: true,  image: "🔌", description: "Smart electric pressure cooker with 12 cooking modes." },
+  { name: "Stainless Steel Kadai",       category: "steel",      original_price: 1199, discount_percentage: 25, inStock: true,  image: "🥘", description: "Premium quality stainless steel kadai, ideal for everyday cooking." },
+  { name: "Copper Water Jug 1L",         category: "copper",     original_price: 850,  discount_percentage: 24, inStock: true,  image: "🏺", description: "Pure copper water jug for health benefits." },
+  { name: "Brass Puja Thali Set",        category: "pooja",      original_price: 1699, discount_percentage: 24, inStock: true,  image: "🪔", description: "Complete brass puja thali set for daily worship." },
+  { name: "Prestige Mixer Grinder 750W", category: "appliances", original_price: 4499, discount_percentage: 22, inStock: true,  image: "🔌", description: "Powerful 750W mixer grinder with 3 jars." },
+  { name: "Brass Lota Kalash 500ml",     category: "brass",      original_price: 550,  discount_percentage: 24, inStock: false, image: "✨", description: "Traditional brass lota for puja and daily use." },
+  { name: "SS Tiffin Box 3 Layer",       category: "steel",      original_price: 699,  discount_percentage: 29, inStock: true,  image: "🥘", description: "Leak-proof 3 layer stainless steel tiffin box." },
+  { name: "Copper Bottle 1.5L",          category: "copper",     original_price: 999,  discount_percentage: 20, inStock: true,  image: "🏺", description: "Pure copper water bottle for Ayurvedic health benefits." },
+  { name: "Gas Stove 3 Burner ISI",      category: "appliances", original_price: 3299, discount_percentage: 15, inStock: true,  image: "🔌", description: "ISI certified 3 burner gas stove with auto ignition." },
+  { name: "Brass Diya Set of 6",         category: "pooja",      original_price: 499,  discount_percentage: 30, inStock: true,  image: "🪔", description: "Beautiful brass diya set for festivals and daily puja." },
+  { name: "SS Pressure Cooker 5L",       category: "steel",      original_price: 1599, discount_percentage: 25, inStock: false, image: "🥘", description: "Heavy duty stainless steel pressure cooker." },
+  { name: "Pital Kadai 2L",             category: "brass",      original_price: 1200, discount_percentage: 21, inStock: true,  image: "✨", description: "Traditional pital (brass) kadai for authentic cooking." },
+  { name: "Electric Pressure Cooker 6L", category: "appliances", original_price: 5499, discount_percentage: 22, inStock: true,  image: "🔌", description: "Smart electric pressure cooker with 12 cooking modes." },
 ];
 
 const OFFERS = [

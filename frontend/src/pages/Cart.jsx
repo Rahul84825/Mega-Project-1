@@ -19,9 +19,10 @@ const CartItem = ({ item }) => {
   const { categories } = useProducts();
   const id = item._id || item.id;
   const variantId = item.variant_id || null;
-  const originalPrice = item.originalPrice || item.mrp || item.price;
-  const savings = Math.round(originalPrice - item.price);
-  const discountPct = originalPrice > item.price ? Math.round((savings / originalPrice) * 100) : 0;
+  const originalPrice = item.original_price || item.originalPrice || item.mrp || item.final_price || item.price;
+  const currentPrice = item.final_price || item.price;
+  const savings = Math.round(originalPrice - currentPrice);
+  const discountPct = item.discount_percentage ?? (originalPrice > currentPrice ? Math.round((savings / originalPrice) * 100) : 0);
 
   const categoryLabel = getCategoryLabel(item.category, categories);
   const hasRealImage = item.image && item.image.startsWith("http");
@@ -67,11 +68,11 @@ const CartItem = ({ item }) => {
         {/* ── Pricing ── */}
         <div className="mt-2 sm:mt-3 flex items-center gap-2.5 flex-wrap">
           <span className="text-lg font-bold text-slate-800">
-            ₹{(item.price * item.quantity).toLocaleString()}
+            ₹{(currentPrice * item.quantity).toLocaleString()}
           </span>
-          {originalPrice > item.price && (
+          {originalPrice > currentPrice && (
             <span className="text-sm font-medium text-slate-400 line-through">
-              ₹{(originalPrice * item.quantity).toLocaleString()}
+              ₹{(originalPrice * item.quantity).toLocaleString("en-IN")}
             </span>
           )}
           {discountPct > 0 && (
@@ -90,7 +91,7 @@ const CartItem = ({ item }) => {
           </div>
 
           <div className="flex flex-col items-end">
-             {item.quantity > 1 && <p className="text-[11px] text-slate-400 mb-0.5">₹{item.price.toLocaleString()} each</p>}
+             {item.quantity > 1 && <p className="text-[11px] text-slate-400 mb-0.5">₹{currentPrice.toLocaleString("en-IN")} each</p>}
              {item.inStock ? <span className="text-[11px] text-emerald-600 font-medium">✓ In Stock</span> : <span className="text-[11px] text-rose-500 font-medium">Out of Stock</span>}
           </div>
         </div>
@@ -118,7 +119,7 @@ const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, cartTotal, cartCount } = useCart();
 
-  const originalTotal  = Math.round(cartItems.reduce((sum, item) => sum + (item.originalPrice || item.mrp || item.price) * item.quantity, 0));
+  const originalTotal  = Math.round(cartItems.reduce((sum, item) => sum + (item.original_price || item.originalPrice || item.mrp || item.final_price || item.price) * item.quantity, 0));
   const totalSavings   = Math.round(originalTotal - cartTotal);
   const deliveryCharge = cartTotal >= 999 ? 0 : cartTotal === 0 ? 0 : 79;
   const finalTotal     = Math.round(cartTotal + deliveryCharge);
@@ -151,7 +152,7 @@ const Cart = () => {
             {totalSavings > 0 && (
               <div className="flex items-center gap-3 bg-emerald-50/50 border border-emerald-100 text-emerald-700 px-5 py-3.5 rounded-2xl text-sm font-medium">
                 <Tag size={16} className="text-emerald-500" /> 
-                <span>You're saving <span className="font-semibold">₹{totalSavings.toLocaleString()}</span> on this order 🎉</span>
+                <span>You're saving <span className="font-semibold">₹{totalSavings.toLocaleString("en-IN")}</span> on this order 🎉</span>
               </div>
             )}
             {cartItems.map((item) => <CartItem key={`${item._id || item.id}-${item.variant_id || "base"}`} item={item} />)}
@@ -166,13 +167,13 @@ const Cart = () => {
               <div className="flex flex-col gap-3.5 text-sm">
                 <div className="flex justify-between text-slate-600">
                   <span>Subtotal ({cartCount} {cartCount === 1 ? "item" : "items"})</span>
-                  <span className="font-medium text-slate-800">₹{cartTotal.toLocaleString()}</span>
+                  <span className="font-medium text-slate-800">₹{cartTotal.toLocaleString("en-IN")}</span>
                 </div>
                 
                 {totalSavings > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span>Product Discount</span>
-                    <span className="font-medium">− ₹{totalSavings.toLocaleString()}</span>
+                    <span className="font-medium">− ₹{totalSavings.toLocaleString("en-IN")}</span>
                   </div>
                 )}
                 
@@ -187,14 +188,14 @@ const Cart = () => {
                 
                 {deliveryCharge > 0 && (
                   <p className="text-[11px] text-blue-600 bg-blue-50/50 rounded-lg px-3 py-2 mt-1">
-                    Add ₹{(999 - cartTotal).toLocaleString()} more for FREE delivery!
+                    Add ₹{(999 - cartTotal).toLocaleString("en-IN")} more for FREE delivery!
                   </p>
                 )}
                 
                 <div className="border-t border-slate-100 mt-2 pt-4 flex justify-between items-end">
                   <span className="text-base font-semibold text-slate-800">Total Amount</span>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-slate-800">₹{finalTotal.toLocaleString()}</span>
+                    <span className="text-xl font-bold text-slate-800">₹{finalTotal.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
               </div>
