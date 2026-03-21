@@ -17,6 +17,7 @@ const Contact = lazy(() => import("./pages/Contact"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const BuiltBy = lazy(() => import("./pages/BuiltBy"));
 
 // Policy Pages
 const ShippingPolicy = lazy(() => import("./pages/policies/ShippingPolicy"));
@@ -115,6 +116,7 @@ const App = () => (
         <Route path="/returns-exchanges"  element={<ReturnsExchange />} />
         <Route path="/privacy-policy"     element={<PrivacyPolicy />} />
         <Route path="/terms-conditions"   element={<TermsConditions />} />
+        <Route path="/built-by"           element={<BuiltBy />} />
         <Route path="*"             element={<NotFound />} />
       </Route>
 
