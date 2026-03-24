@@ -37,29 +37,29 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
   const categoryLabel = getCategoryLabel(product.category, categories);
   const hasRealImage = primaryImage && primaryImage.startsWith("http") && !imgError;
   const hasRating = product.rating > 0;
-  const cardPadding = compact ? "p-4" : "p-5";
+  const cardPadding = compact ? "p-4" : "p-6";
 
   const badgeClass = {
-    blue: "bg-blue-500/95 text-white",
-    rose: "bg-rose-500/95 text-white",
-    slate: "bg-slate-800/95 text-white",
+    blue: "bg-blue-100 text-blue-700",
+    rose: "bg-red-100 text-red-600",
+    slate: "bg-slate-200 text-slate-600",
   };
 
   return (
     <div
       onClick={() => navigate(`/products/${productId}`)}
-      className="interactive-card overflow-hidden group cursor-pointer flex flex-col relative"
+      className="group cursor-pointer flex flex-col relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/70"
     >
-      <div className="relative bg-slate-50 overflow-hidden aspect-square w-full shrink-0">
+      <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-gray-50">
         {hasRealImage ? (
           <img
             src={primaryImage} alt={product.name}
             loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-6xl group-hover:scale-110 transition-transform duration-700 ease-out bg-slate-100/50">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 text-6xl transition-transform duration-500 ease-out group-hover:scale-105">
             {primaryImage && !primaryImage.startsWith("http")
               ? primaryImage
               : "📦"
@@ -67,27 +67,27 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
           </div>
         )}
 
-        <div className="absolute top-3 left-3 flex flex-col gap-2 z-10 items-start">
+        <div className="absolute left-3 top-3 z-10 flex items-start gap-1.5">
           {badges.slice(0, 2).map((badge) => (
             <span
               key={badge.label}
-              className={`backdrop-blur-sm text-[10px] font-extrabold px-3 py-1.5 rounded-full tracking-wider uppercase shadow-sm ${badgeClass[badge.tone]}`}
+              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide ${badgeClass[badge.tone]}`}
             >
               {badge.label}
             </span>
           ))}
         </div>
 
-        <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5">
           <button
             onClick={(e) => {
               e.stopPropagation();
               toggleWishlist(productId);
             }}
             aria-label="Toggle wishlist"
-            className={`w-9 h-9 rounded-full border backdrop-blur-sm transition-all ${isWishlisted ? "bg-rose-50 border-rose-200 text-rose-600" : "bg-white/90 border-slate-200 text-slate-500 hover:text-rose-600"}`}
+            className={`h-8 w-8 rounded-full border bg-white/95 transition-all ${isWishlisted ? "border-red-200 text-red-500" : "border-slate-200 text-slate-400 hover:text-red-500"}`}
           >
-            <Heart className={`w-4 h-4 mx-auto ${isWishlisted ? "fill-rose-500" : ""}`} />
+            <Heart className={`mx-auto h-3.5 w-3.5 ${isWishlisted ? "fill-red-500" : ""}`} />
           </button>
           {onQuickView && (
             <button
@@ -96,52 +96,52 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
                 onQuickView(product);
               }}
               aria-label="Quick view"
-              className="w-9 h-9 rounded-full border bg-white/90 border-slate-200 text-slate-500 hover:text-blue-700"
+              className="h-8 w-8 rounded-full border border-slate-200 bg-white/95 text-slate-400 hover:text-slate-600"
             >
-              <Eye className="w-4 h-4 mx-auto" />
+              <Eye className="mx-auto h-3.5 w-3.5" />
             </button>
           )}
         </div>
       </div>
 
       <div className={`${cardPadding} flex flex-col flex-1`}>
-        {categoryLabel && (
-          <p className="text-[10px] font-extrabold text-blue-800 uppercase tracking-[0.18em] mb-2.5">
-            {categoryLabel}
-          </p>
-        )}
+        {categoryLabel && <p className="mb-2 text-[11px] font-medium text-slate-400">{categoryLabel}</p>}
         
-        <h3 className="text-[15px] sm:text-base font-extrabold text-slate-900 leading-snug line-clamp-2 mb-2.5 group-hover:text-blue-700 transition-colors">
+        <h3 className="mb-2 line-clamp-2 text-[15px] font-medium leading-snug text-slate-800 transition-colors group-hover:text-slate-900 sm:text-base">
           {product.name}
         </h3>
 
+        {product.brand && (
+          <p className="mb-3 text-xs font-medium text-slate-400">{product.brand}</p>
+        )}
+
         {hasRating && (
-          <div className={`flex items-center gap-2 ${compact ? "mb-3" : "mb-4"}`}>
+          <div className={`flex items-center gap-1.5 ${compact ? "mb-3" : "mb-4"}`}>
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star 
                   key={s} 
-                  className={`w-3.5 h-3.5 ${s <= Math.floor(product.rating) ? "fill-amber-400 text-amber-400" : "fill-slate-100 text-slate-200"}`} 
+                  className={`h-3 w-3 ${s <= Math.floor(product.rating) ? "fill-amber-400 text-amber-400" : "fill-slate-100 text-slate-200"}`} 
                 />
               ))}
             </div>
             {product.reviews > 0 && (
-              <span className="text-xs font-medium text-slate-400">({product.reviews})</span>
+              <span className="text-[11px] font-medium text-slate-400">({product.reviews})</span>
             )}
           </div>
         )}
 
-        <div className={`flex flex-wrap items-end gap-2 mt-auto ${compact ? "mb-4" : "mb-5"}`}>
-          <span className="price-main text-xl sm:text-[1.35rem]">
+        <div className={`mt-auto flex items-end gap-2 ${compact ? "mb-4" : "mb-5"}`}>
+          <span className="text-xl font-bold tracking-tight text-slate-900 sm:text-[1.3rem]">
             ₹{product.price.toLocaleString("en-IN")}
           </span>
           {mrp > product.price && (
-            <span className="text-sm font-medium text-slate-400 line-through mb-0.5">
+            <span className="mb-0.5 text-sm font-medium text-slate-400 line-through">
               ₹{mrp.toLocaleString("en-IN")}
             </span>
           )}
           {discount > 0 && (
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md ml-auto border border-emerald-100">
+            <span className="ml-auto rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">
               Save ₹{Math.round(mrp - product.price).toLocaleString("en-IN")}
             </span>
           )}
@@ -150,21 +150,21 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
         <button
           onClick={handleAddToCart}
           disabled={!product.inStock}
-          className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all duration-300
+          className={`w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all duration-300
             ${addedToCart 
-              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-[0.98]"
+              ? "bg-emerald-500 text-white shadow-sm"
               : product.inStock 
-                ? "bg-slate-900 text-white hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-900/20 active:scale-95"
-                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md"
+                : "cursor-not-allowed bg-slate-100 text-slate-400"
             }`}
         >
           {addedToCart ? (
             <>
-              <Check className="w-4 h-4" /> Added to Cart
+              <Check className="h-4 w-4" /> Added to Cart
             </>
           ) : product.inStock ? (
             <>
-              <ShoppingCart className="w-4 h-4" /> Add to Cart
+              <ShoppingCart className="h-4 w-4" /> Add to Cart
             </>
           ) : (
             "Out of Stock"
