@@ -98,8 +98,15 @@ const PAYMENT_METHODS = [
   { id: "upi", label: "Pay with UPI",     desc: "Pay via GPay, PhonePe, Paytm, BHIM", icon: Smartphone, color: "text-green-600",  bg: "bg-green-50"  },
 ];
 
-const PaymentForm = ({ selected, onSelect, errors, orderTotal }) => (
-  <div>
+const PaymentForm = ({ selected, onSelect, errors, orderTotal }) => {
+  const upiPaymentLink = `upi://pay?${new URLSearchParams({
+    pa: UPI_ID,
+    pn: "Mahalaxmi Steels",
+    cu: "INR",
+  }).toString()}`;
+
+  return (
+    <div>
     <div className="flex items-center gap-2 mb-5">
       <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
         <CreditCard className="w-4 h-4 text-blue-600" />
@@ -140,13 +147,13 @@ const PaymentForm = ({ selected, onSelect, errors, orderTotal }) => (
                   <p className="text-xs text-green-800 font-semibold mb-2">Scan QR code or tap the button below to pay via UPI</p>
                   <div className="flex justify-center mb-3">
                     <QRCodeSVG
-                      value={`upi://pay?pa=${UPI_ID}&pn=Mahalaxmi%20Steels&am=${orderTotal}&cu=INR`}
+                      value={upiPaymentLink}
                       size={180}
                       className="rounded-lg border border-green-200"
                     />
                   </div>
                   <a
-                    href={`upi://pay?pa=${UPI_ID}&pn=Mahalaxmi%20Steels&am=${orderTotal}&cu=INR`}
+                    href={upiPaymentLink}
                     className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors"
                   >
                     <Smartphone className="w-4 h-4" />
@@ -162,8 +169,9 @@ const PaymentForm = ({ selected, onSelect, errors, orderTotal }) => (
       })}
     </div>
     {errors.payment && <p className="text-xs text-red-500 mt-2">{errors.payment}</p>}
-  </div>
-);
+    </div>
+  );
+};
 
 // ── Order Summary ─────────────────────────────────────────────────────────────
 const OrderSummary = ({ cartItems, cartTotal, codFee = 0 }) => {
