@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, ShoppingBag, ArrowRight, ShoppingCart } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +16,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when open
+  // Lock body scroll when open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -29,29 +30,45 @@ const CartDrawer = ({ isOpen, onClose }) => {
   const delivery = cartTotal >= 999 ? 0 : 79;
   const grandTotal = cartTotal + delivery;
 
-  return (
+  // createPortal renders into document.body — completely escapes
+  // any parent z-index / transform stacking context in the app tree
+  return createPortal(
     <>
       {/* ── Backdrop ── */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${
+        aria-hidden="true"
+        style={{ position: "fixed", inset: 0, zIndex: 9998 }}
+        className={`bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       />
 
       {/* ── Drawer Panel ── */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-full max-w-md bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Shopping cart"
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          height: "100dvh",
+          width: "min(28rem, 100vw)",
+          zIndex: 9999,
+          transform: isOpen ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)",
+          willChange: "transform",
+        }}
+        className="bg-white shadow-2xl flex flex-col"
       >
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-2.5">
             <ShoppingBag className="w-5 h-5 text-blue-600" />
             <h2 className="text-base font-bold text-slate-900">Your Cart</h2>
             {cartCount > 0 && (
-              <span className="bg-blue-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+              <span className="bg-blue-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full leading-none">
                 {cartCount}
               </span>
             )}
@@ -93,7 +110,6 @@ const CartDrawer = ({ isOpen, onClose }) => {
         {/* ── Footer ── */}
         {cartItems.length > 0 && (
           <div className="shrink-0 border-t border-slate-100 px-5 py-4 space-y-3 bg-white">
-            {/* Price Breakdown */}
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between text-slate-500">
                 <span>Subtotal</span>
@@ -114,13 +130,11 @@ const CartDrawer = ({ isOpen, onClose }) => {
               )}
             </div>
 
-            {/* Total */}
             <div className="flex justify-between items-center pt-2 border-t border-slate-100">
               <span className="font-bold text-slate-900">Total</span>
               <span className="text-xl font-black text-slate-900">₹{grandTotal.toLocaleString()}</span>
             </div>
 
-            {/* Checkout Button */}
             <button
               onClick={handleCheckout}
               className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-slate-900/10 active:scale-95 text-sm"
@@ -131,7 +145,8 @@ const CartDrawer = ({ isOpen, onClose }) => {
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 };
 
