@@ -151,7 +151,10 @@ const ProductDetails = () => {
       return itemVariantId === selectedVariantKey;
     })
     .reduce((sum, item) => sum + (item.quantity || 1), 0);
+
   const remainingStock = Math.max(0, productStock - cartQty);
+
+  const handleAddToCart = () => {
     if (remainingStock <= 0) {
       alert("Max items already added to cart");
       return;
