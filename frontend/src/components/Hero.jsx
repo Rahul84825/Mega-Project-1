@@ -9,6 +9,20 @@ import { DeliveryNotice } from "./DeliveryNotice";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
 
+const toNumber = (value, fallback = 0) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const toText = (value, fallback = "") => {
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (value && typeof value === "object") {
+    if (typeof value.label === "string") return value.label;
+    if (typeof value.name === "string") return value.name;
+  }
+  return fallback;
+};
+
 // ── Reusable ProductCard ─────────────────────────────────────────────
 export const ProductCard = memo(({ product, onCartOpen }) => {
   const { addToCart, isInCart } = useCart();
@@ -189,7 +203,26 @@ const Hero = memo(({ onCartOpen }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const { products } = useProducts();
-  const heroProduct = products.find((p) => p.isHero) || products[0] || null;
+  const heroProduct = products.find((p) => p?.isHero) || products[0] || null;
+
+  const safeHeroProduct = heroProduct
+    ? {
+        ...heroProduct,
+        name: toText(heroProduct.name, "Featured Product"),
+        image: toText(heroProduct.image || heroProduct.images?.[0], ""),
+        category: toText(heroProduct.category, "Featured"),
+        price: toNumber(heroProduct.price, 0),
+        originalPrice: toNumber(heroProduct.originalPrice || heroProduct.mrp || heroProduct.price, 0),
+        rating: toNumber(heroProduct.rating, 0),
+        reviewCount: toNumber(heroProduct.reviewCount || heroProduct.reviews, 0),
+        discount: toNumber(heroProduct.discount, 0),
+        stock: toNumber(heroProduct.stock, 0),
+        inStock:
+          typeof heroProduct.inStock === "boolean"
+            ? heroProduct.inStock
+            : toNumber(heroProduct.stock, 0) > 0,
+      }
+    : null;
 
   const handleSearch = useCallback(
     (e) => {
@@ -294,8 +327,8 @@ const Hero = memo(({ onCartOpen }) => {
             {/* Soft backdrop blur */}
             <div className="absolute inset-0 bg-linear-to-tr from-blue-100/50 to-transparent rounded-full blur-3xl scale-90 pointer-events-none" />
 
-            {heroProduct ? (
-              <ProductCard product={heroProduct} onCartOpen={onCartOpen} />
+            {safeHeroProduct ? (
+              <ProductCard product={safeHeroProduct} onCartOpen={onCartOpen} />
             ) : (
               <div className="relative bg-white p-8 rounded-3xl shadow-xl border border-slate-200 w-full max-w-85 sm:max-w-100 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">
