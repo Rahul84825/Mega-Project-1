@@ -30,8 +30,15 @@ export const ProductCard = memo(({ product, onCartOpen }) => {
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
 
-  const alreadyInCart = isInCart(product._id || product.id);
-  const outOfStock = !product.inStock && product.stock === 0;
+  const defaultVariant = Array.isArray(product.variants) && product.variants.length
+    ? product.variants[0]
+    : null;
+  const defaultVariantId = defaultVariant?.id || defaultVariant?._id || defaultVariant?.variant_id || null;
+  const resolvedStock = Number(defaultVariant?.stock ?? product.stock ?? 0);
+  const resolvedInStock = typeof product.inStock === "boolean" ? product.inStock : resolvedStock > 0;
+
+  const alreadyInCart = isInCart(product._id || product.id, defaultVariantId ? String(defaultVariantId) : null);
+  const outOfStock = !resolvedInStock || resolvedStock <= 0;
 
   const handleAddToCart = useCallback(
     (e) => {
@@ -39,7 +46,7 @@ export const ProductCard = memo(({ product, onCartOpen }) => {
       if (outOfStock || adding) return;
 
       setAdding(true);
-      addToCart(product);
+      addToCart(product, defaultVariantId ? { variantId: String(defaultVariantId) } : {});
 
       toast.success(
         <div className="flex items-center gap-2">
@@ -64,11 +71,18 @@ export const ProductCard = memo(({ product, onCartOpen }) => {
         if (onCartOpen) onCartOpen();
       }, 300);
     },
-    [product, addToCart, outOfStock, adding, onCartOpen]
+    [product, addToCart, outOfStock, adding, onCartOpen, defaultVariantId]
   );
 
   const handleCardClick = useCallback(() => {
-    navigate(`/product/${product._id || product.id}`);
+    const productId = product._id || product.id;
+    if (!productId) {
+      console.warn("[Hero] Missing product id, skipping navigation", { product });
+      return;
+    }
+    const nextRoute = `/product/${productId}`;
+    console.debug("[Hero] Product card clicked", { productId: String(productId), route: nextRoute });
+    navigate(nextRoute);
   }, [navigate, product]);
 
   const savedAmount = product.originalPrice - product.price;
@@ -203,7 +217,7 @@ ProductCard.displayName = "ProductCard";
 const Hero = memo(({ onCartOpen }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const { products } = useProducts();
+  const { products, loading } = useProducts();
   const heroProduct = products.find((p) => p?.isHero) || products[0] || null;
 
   // NEW: Calculate pricing from variant-based structure
@@ -343,7 +357,13 @@ const Hero = memo(({ onCartOpen }) => {
             {/* Soft backdrop blur */}
             <div className="absolute inset-0 bg-linear-to-tr from-blue-100/50 to-transparent rounded-full blur-3xl scale-90 pointer-events-none" />
 
-            {safeHeroProduct ? (
+            {loading ? (
+              <div className="relative bg-white p-8 rounded-3xl shadow-xl border border-slate-200 w-full max-w-85 sm:max-w-100 text-center animate-pulse">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100" />
+                <div className="h-5 bg-slate-100 rounded w-2/3 mx-auto mb-2" />
+                <div className="h-4 bg-slate-100 rounded w-1/2 mx-auto" />
+              </div>
+            ) : safeHeroProduct ? (
               <ProductCard product={safeHeroProduct} onCartOpen={onCartOpen} />
             ) : (
               <div className="relative bg-white p-8 rounded-3xl shadow-xl border border-slate-200 w-full max-w-85 sm:max-w-100 text-center">

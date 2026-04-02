@@ -46,7 +46,11 @@ const ProductDetails = () => {
   const [buyNowLoading, setBuyNowLoading] = useState(false);
   const [showCheckoutToast, setShowCheckoutToast] = useState(false);
 
-  useEffect(() => { fetchProduct(); window.scrollTo(0, 0); }, [id]);
+  useEffect(() => {
+    console.debug("[ProductDetails] Route param", { id: id ?? null, path: window.location.pathname });
+    fetchProduct();
+    window.scrollTo(0, 0);
+  }, [id]);
 
   useEffect(() => {
     if (!product) return;
@@ -102,9 +106,18 @@ const ProductDetails = () => {
   }, [id]);
 
   async function fetchProduct(quiet = false) {
+    const safeId = String(id || "").trim();
+    if (!safeId || safeId === "undefined" || safeId === "null") {
+      console.warn("[ProductDetails] Invalid product id in route", { id });
+      setError(true);
+      setLoading(false);
+      return;
+    }
+
     if (!quiet) { setLoading(true); setError(false); }
     try {
-      const data = await api.get(`/api/products/${id}`);
+      console.debug("[ProductDetails] Fetching product", { id: safeId, endpoint: `/api/products/${safeId}` });
+      const data = await api.get(`/api/products/${safeId}`);
       const p = data.product || data;
       setProduct(p);
       document.title = `${p.name} — Mahalaxmi Steels`;

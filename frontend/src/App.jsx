@@ -127,6 +127,7 @@ const App = () => {
           <Route element={<StorefrontLayout onCartOpen={() => setCartOpen(true)} />}>
             <Route path="/"                     element={<Home onCartOpen={() => setCartOpen(true)} />} />
             <Route path="/products"             element={<Products />} />
+            <Route path="/product/:id"          element={<ProductDetails />} />
             <Route path="/products/:id"         element={<ProductDetails />} />
             <Route path="/cart"                 element={<Cart />} />
             <Route path="/checkout"             element={<Checkout />} />
