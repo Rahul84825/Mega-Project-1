@@ -3,6 +3,7 @@ import { api } from "../utils/api";
 import { useAuth } from "./AuthContext";
 import { useSound } from "./SoundContext";
 import { io } from "socket.io-client";
+import { resolveProductPricing } from "../utils/priceCalculator";
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/api\/?$/, "");
 
@@ -10,6 +11,7 @@ const normalizeProduct = (p = {}) => {
   const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
   const image = (images && images[0]) || p.image || "";
   const categoryValue = p.category || p.category_id || null;
+  const pricing = resolveProductPricing(p);
 
   return {
     ...p,
@@ -17,6 +19,10 @@ const normalizeProduct = (p = {}) => {
     images: image && !images.includes(image) ? [image, ...images] : images,
     category: categoryValue,
     category_id: p.category_id || categoryValue,
+    price: pricing.finalPrice,
+    originalPrice: pricing.originalPrice,
+    discountPercent: pricing.discountPercent,
+    discountAmount: pricing.savingsAmount,
   };
 };
 

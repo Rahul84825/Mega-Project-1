@@ -77,6 +77,97 @@ export const normalizeVariantPrice = (variant) => {
   };
 };
 
+const firstFinitePositive = (...values) => {
+  for (const value of values) {
+    const n = toFiniteNumber(value, NaN);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 0;
+};
+
+/**
+ * Normalize product pricing across legacy and variant-based product records.
+ * Returns a safe shape for card/list rendering.
+ */
+export const resolveProductPricing = (product = {}) => {
+  const variant = Array.isArray(product.variants) && product.variants.length > 0
+    ? product.variants[0] || {}
+    : {};
+
+  let originalPrice = firstFinitePositive(
+    variant.originalPrice,
+    variant.mrp,
+    product.originalPrice,
+    product.mrp
+  );
+
+  let finalPrice = firstFinitePositive(
+    variant.finalPrice,
+    product.finalPrice,
+    variant.price,
+    product.price
+  );
+
+  let discountPercent = Math.max(0, Math.min(toFiniteNumber(
+    variant.discountPercent ?? product.discountPercent ?? product.discount,
+    0
+  ), 100));
+
+  let discountAmount = Math.max(0, toFiniteNumber(
+    variant.discountAmount ?? product.discountAmount,
+    0
+  ));
+
+  if (originalPrice > 0 && finalPrice > 0) {
+    if (originalPrice > finalPrice) {
+      // trusted explicit old/new pair
+    } else if (discountPercent > 0) {
+      finalPrice = calculateFinalPrice(originalPrice, discountPercent);
+    } else if (discountAmount > 0 && originalPrice > discountAmount) {
+      finalPrice = roundMoney(originalPrice - discountAmount);
+    } else {
+      originalPrice = finalPrice;
+    }
+  } else if (originalPrice > 0 && finalPrice <= 0) {
+    if (discountPercent > 0) {
+      finalPrice = calculateFinalPrice(originalPrice, discountPercent);
+    } else if (discountAmount > 0) {
+      finalPrice = roundMoney(Math.max(0, originalPrice - discountAmount));
+    } else {
+      finalPrice = originalPrice;
+    }
+  } else if (finalPrice > 0 && originalPrice <= 0) {
+    if (discountPercent > 0 && discountPercent < 100) {
+      originalPrice = roundMoney(finalPrice / (1 - (discountPercent / 100)));
+    } else if (discountAmount > 0) {
+      originalPrice = roundMoney(finalPrice + discountAmount);
+    } else {
+      originalPrice = finalPrice;
+    }
+  }
+
+  originalPrice = roundMoney(Math.max(0, originalPrice));
+  finalPrice = roundMoney(Math.max(0, finalPrice));
+
+  const { savingsAmount, savingsPercent } = calculateSavings(originalPrice, finalPrice);
+  if (savingsAmount <= 0) {
+    discountAmount = 0;
+    discountPercent = 0;
+    originalPrice = finalPrice;
+  } else {
+    discountAmount = savingsAmount;
+    discountPercent = discountPercent > 0 ? Math.round(discountPercent) : Math.round(savingsPercent);
+  }
+
+  return {
+    originalPrice,
+    finalPrice,
+    discountPercent,
+    savingsAmount: discountAmount,
+    hasDiscount: discountAmount > 0,
+  };
+};
+
 /**
  * Calculate cart total based on cart items
  * @param {array} cartItems - Array of cart items with finalPrice and quantity

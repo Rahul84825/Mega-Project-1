@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
 import { getCategoryLabel } from "../utils/category";
-import { calculateFinalPrice, formatPrice } from "../utils/priceCalculator";
+import { formatPrice, resolveProductPricing } from "../utils/priceCalculator";
 
 const ProductCard = ({ product, onQuickView, compact = false }) => {
   const [imgError, setImgError] = useState(false);
@@ -23,12 +23,11 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
   const inCart   = cartQty > 0;
 
   // ── Pricing ────────────────────────────────────────────────────────
-  // NEW: Use variant-based pricing from first/default variant
-  const defaultVariant = (product.variants && product.variants[0]) || {};
-  const originalPrice = Number(defaultVariant.originalPrice ?? defaultVariant.price ?? product.originalPrice ?? product.mrp ?? 0);
-  const discountPercent = Number(defaultVariant.discountPercent ?? 0);
-  const finalPrice = originalPrice > 0 ? calculateFinalPrice(originalPrice, discountPercent) : 0;
-  const savingsAmount = originalPrice > 0 ? Math.round(originalPrice * discountPercent / 100) : 0;
+  const pricing = resolveProductPricing(product);
+  const originalPrice = pricing.originalPrice;
+  const finalPrice = pricing.finalPrice;
+  const discountPercent = pricing.discountPercent;
+  const savingsAmount = pricing.savingsAmount;
 
   // ── Image ──────────────────────────────────────────────────────────
   const primaryImage =
@@ -37,7 +36,7 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
   const hasRealImage = primaryImage && primaryImage.startsWith("http") && !imgError;
 
   const categoryLabel = getCategoryLabel(product.category, categories);
-  const hasRating     = product.rating > 0;
+  const hasRating     = Number(product?.rating || 0) > 0;
   const maxAllowed    = product.stock ? Math.min(10, product.stock) : 10;
 
   // ── Handlers ───────────────────────────────────────────────────────
@@ -102,7 +101,7 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
         )}
 
         {/* Discount badge — top left */}
-        {discountPercent > 0 && (
+          {pricing.hasDiscount && (
           <div className="absolute left-3 top-3 z-10">
             <span className="rounded-full bg-rose-500 px-2.5 py-1 text-[10px] font-bold tracking-wide text-white shadow-sm">
               {Math.round(discountPercent)}% OFF
@@ -197,7 +196,7 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
               {formatPrice(originalPrice)}
             </span>
           )}
-          {discountPercent > 0 && (
+          {pricing.hasDiscount && (
             <span className="ml-auto rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-0.5
                              text-[10px] font-bold text-emerald-700">
               Save {formatPrice(savingsAmount)}
