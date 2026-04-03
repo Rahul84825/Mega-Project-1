@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft, ShoppingCart,
   Truck, ShieldCheck, RotateCcw, Minus, Plus,
-  ChevronRight, PackageX, Zap,
+  ChevronRight, PackageX, Zap, CheckCircle2,
 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { api } from "../utils/api";
@@ -250,6 +250,15 @@ const ProductDetails = () => {
   const displayStock = productStock;
   const displayInStock = displayStock > 0;
 
+  const highlights = Array.isArray(product.highlights) && product.highlights.length
+    ? product.highlights.filter(Boolean).slice(0, 5)
+    : [
+        displayInStock ? "Ready stock for quick dispatch" : "Currently out of stock",
+        savings > 0 ? `You save ${formatPrice(savings)} on this offer` : "Transparent market pricing",
+        categoryLabel ? `Best fit for ${categoryLabel}` : "Trusted quality for daily use",
+        specs[0] ? `${specs[0].label}: ${specs[0].value}` : "Quality checked before shipping",
+      ].filter(Boolean);
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {showCheckoutToast && (
@@ -277,18 +286,22 @@ const ProductDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Images */}
           <div className="flex flex-col gap-3">
-            <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden aspect-square flex items-center justify-center group">
+            <div className="relative bg-white rounded-3xl border border-gray-100 shadow-md overflow-hidden aspect-square flex items-center justify-center group">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/5 pointer-events-none" />
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                 {displayDiscount > 0 && <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">-{Math.round(displayDiscount)}%</span>}
               {!displayInStock && <span className="bg-gray-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">Sold Out</span>}
               </div>
               {currentSrc ? (
-                <img src={currentSrc} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-zoom-in" loading="lazy" onError={() => setImgErrors((p) => ({ ...p, [safeActiveImg]: true }))} />
+                <img src={currentSrc} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-125 cursor-zoom-in" loading="lazy" onError={() => setImgErrors((p) => ({ ...p, [safeActiveImg]: true }))} />
               ) : isEmojiImage ? (
                 <span className="text-[120px] select-none">{product.image}</span>
               ) : (
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center text-6xl">📦</div>
               )}
+              <span className="absolute bottom-3 right-3 text-[11px] font-semibold text-white bg-black/55 backdrop-blur px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                Hover to zoom
+              </span>
             </div>
             {hasImages && allImages.length > 1 ? (
               <div className="flex gap-2">
@@ -310,21 +323,34 @@ const ProductDetails = () => {
           </div>
 
           {/* Details */}
-          <div className="flex flex-col">
+          <div className="flex flex-col bg-white rounded-3xl border border-gray-100 shadow-xl p-5 sm:p-7">
             {categoryLabel && <span className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-2">{categoryLabel}</span>}
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 leading-tight">{product.name}</h1>
 
-            <div className="flex items-baseline gap-3 mb-2">
-              <span className="text-3xl font-bold text-gray-900">{formatPrice(displayFinalPrice)}</span>
-              {displayOriginalPrice > displayFinalPrice && (
-                <span className="text-lg text-gray-400 line-through">{formatPrice(displayOriginalPrice)}</span>
-              )}
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5 mb-4">
+              <div className="flex items-end gap-3 flex-wrap">
+                <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">{formatPrice(displayFinalPrice)}</span>
+                {displayDiscount > 0 && (
+                  <span className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold px-3 py-1 mb-1">
+                    {Math.round(displayDiscount)}% OFF
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 flex items-center gap-3 flex-wrap">
+                {displayOriginalPrice > displayFinalPrice && (
+                  <span className="text-base sm:text-lg text-slate-400 line-through">{formatPrice(displayOriginalPrice)}</span>
+                )}
+                {savings > 0 && (
+                  <span className="text-sm font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    Save {formatPrice(savings)}
+                  </span>
+                )}
+              </div>
             </div>
-            {savings > 0 && <p className="text-sm font-semibold text-green-600 mb-4">You save {formatPrice(savings)} ({Math.round(displayDiscount)}% off)</p>}
 
-            <div className="flex items-center gap-2 mb-6">
-              <span className={`w-2.5 h-2.5 rounded-full ${displayInStock ? "bg-green-500" : "bg-red-400"}`} />
-              <span className={`text-sm font-semibold ${displayInStock ? "text-green-600" : "text-red-500"}`}>
+            <div className={`inline-flex items-center gap-2.5 mb-6 w-fit px-3.5 py-2 rounded-full border ${displayInStock ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"}`}>
+              <span className={`w-2.5 h-2.5 rounded-full ${displayInStock ? "bg-emerald-500" : "bg-rose-500"}`} />
+              <span className={`text-sm font-semibold ${displayInStock ? "text-emerald-700" : "text-rose-600"}`}>
                 {displayInStock ? `In Stock${displayStock ? ` - ${displayStock} available` : ""}` : "Out of Stock"}
               </span>
             </div>
@@ -363,11 +389,25 @@ const ProductDetails = () => {
               </div>
             )}
 
+            {highlights.length > 0 && (
+              <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-sm font-bold text-slate-800 mb-3">Product Highlights</p>
+                <ul className="space-y-2">
+                  {highlights.map((item, index) => (
+                    <li key={`${item}-${index}`} className="flex items-start gap-2.5 text-sm text-slate-600">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {displayInStock && (
-              <div className="flex items-center gap-4 mb-5">
-                <span className="text-sm font-semibold text-gray-700">Quantity:</span>
-                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                  <button onClick={() => setQty((q) => Math.max(1, (Number(q) || 1) - 1))} disabled={qty <= 1 || remainingStock <= 0} className="px-3 py-2 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Minus className="w-4 h-4" /></button>
+              <div className="mb-5">
+                <span className="text-sm font-semibold text-gray-700 block mb-2">Quantity</span>
+                <div className="inline-flex items-center rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                  <button onClick={() => setQty((q) => Math.max(1, (Number(q) || 1) - 1))} disabled={qty <= 1 || remainingStock <= 0} className="h-11 w-11 flex items-center justify-center text-gray-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Minus className="w-4 h-4" /></button>
                   <input
                     type="number"
                     min="1"
@@ -384,11 +424,11 @@ const ProductDetails = () => {
                       else if (val > Math.max(1, Math.min(remainingStock, 10))) setQty(Math.max(1, Math.min(remainingStock, 10)));
                     }}
                     disabled={remainingStock <= 0}
-                    className="w-14 text-center text-sm font-bold text-gray-800 border-x border-gray-200 py-2 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-16 text-center text-base font-bold text-gray-900 border-x border-gray-200 h-11 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
-                  <button onClick={() => setQty((q) => Math.min(Math.max(1, Math.min(remainingStock, 10)), (Number(q) || 0) + 1))} disabled={qty >= Math.min(remainingStock, 10) || remainingStock <= 0} className="px-3 py-2 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Plus className="w-4 h-4" /></button>
+                  <button onClick={() => setQty((q) => Math.min(Math.max(1, Math.min(remainingStock, 10)), (Number(q) || 0) + 1))} disabled={qty >= Math.min(remainingStock, 10) || remainingStock <= 0} className="h-11 w-11 flex items-center justify-center text-gray-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"><Plus className="w-4 h-4" /></button>
                 </div>
-                <span className="text-xs text-gray-400">Max {Math.min(displayStock, 10)} per order</span>
+                <span className="text-xs text-gray-400 ml-3">Max {Math.min(displayStock, 10)} per order</span>
               </div>
             )}
             {displayInStock && qty > 1 && <p className="text-xs text-gray-500 mb-4">Total: <span className="font-bold text-gray-800">{formatPrice(displayFinalPrice * qty)}</span></p>}
@@ -407,8 +447,8 @@ const ProductDetails = () => {
               <button
                 onClick={handleAddToCart}
                 disabled={!displayInStock || remainingStock <= 0 || Number(qty) > remainingStock || Number(qty) < 1}
-                className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl text-base font-bold transition-all duration-300
-                  ${added ? "bg-green-500 text-white scale-95" : displayInStock && remainingStock > 0 && Number(qty) <= remainingStock && Number(qty) >= 1 ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg active:scale-95" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+                className={`w-full min-h-14 flex items-center justify-center gap-2 py-4 rounded-xl text-base font-bold transition-all duration-300
+                  ${added ? "bg-green-500 text-white scale-95" : displayInStock && remainingStock > 0 && Number(qty) <= remainingStock && Number(qty) >= 1 ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-xl active:scale-[0.98]" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
               >
                 <ShoppingCart className="w-5 h-5" />
                 {added ? `Added ${qty > 1 ? `(${qty})` : ""} to Cart!` : !displayInStock ? "Out of Stock" : remainingStock <= 0 ? "Max items added" : Number(qty) > remainingStock ? `Only ${remainingStock} left` : "Add to Cart"}
@@ -417,8 +457,8 @@ const ProductDetails = () => {
               <button
                 onClick={handleBuyNow}
                 disabled={buyNowLoading || !displayInStock || remainingStock <= 0 || Number(qty) > remainingStock || Number(qty) < 1}
-                className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl text-base font-bold transition-all duration-300
-                  ${displayInStock && remainingStock > 0 && Number(qty) <= remainingStock && Number(qty) >= 1 ? "bg-emerald-600 text-white hover:bg-emerald-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+                className={`w-full min-h-14 flex items-center justify-center gap-2 py-4 rounded-xl text-base font-bold transition-all duration-300
+                  ${displayInStock && remainingStock > 0 && Number(qty) <= remainingStock && Number(qty) >= 1 ? "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-xl active:scale-[0.98]" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
               >
                 {buyNowLoading ? (
                   <>
