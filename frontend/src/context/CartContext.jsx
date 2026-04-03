@@ -43,6 +43,21 @@ const getMaxAllowed = (stockValue) => {
   return Math.min(10, stock);
 };
 
+const resolveLegacyProductPricing = (product = {}) => {
+  const finalPrice = toNumber(product.price ?? product.finalPrice ?? product.final_price, 0);
+  const originalPrice = toNumber(product.originalPrice ?? product.mrp ?? finalPrice, finalPrice);
+  const discountPercent = originalPrice > finalPrice && originalPrice > 0
+    ? Math.max(0, Math.min(90, Math.round(((originalPrice - finalPrice) / originalPrice) * 100)))
+    : 0;
+
+  return {
+    finalPrice,
+    originalPrice,
+    discountPercent,
+    stock: Math.max(0, Math.floor(toNumber(product.stock, 0))),
+  };
+};
+
 const resolveVariantForProduct = (product = {}, options = {}) => {
   const variants = getProductVariants(product);
   if (!variants.length) return null;
@@ -179,13 +194,14 @@ export const CartProvider = ({ children }) => {
 
       const selectedVariant = resolveVariantForProduct(product, options);
       const selectedVariantId = getVariantId(selectedVariant);
+      const legacy = resolveLegacyProductPricing(product);
 
       const quantityRequested = Math.max(1, Math.floor(toNumber(options.quantity, 1)));
-      // Use finalPrice from normalized variant
-      const resolvedFinalPrice = selectedVariant ? selectedVariant.finalPrice : 0;
-      const resolvedOriginalPrice = selectedVariant ? selectedVariant.originalPrice : 0;
-      const resolvedDiscountPercent = selectedVariant ? selectedVariant.discountPercent : 0;
-      const resolvedStock = selectedVariant ? toNumber(selectedVariant.stock, toNumber(product.stock, 0)) : toNumber(product.stock, 0);
+      // Prefer variant pricing, with legacy product-level fallback for old products.
+      const resolvedFinalPrice = selectedVariant ? selectedVariant.finalPrice : legacy.finalPrice;
+      const resolvedOriginalPrice = selectedVariant ? selectedVariant.originalPrice : legacy.originalPrice;
+      const resolvedDiscountPercent = selectedVariant ? selectedVariant.discountPercent : legacy.discountPercent;
+      const resolvedStock = selectedVariant ? toNumber(selectedVariant.stock, legacy.stock) : legacy.stock;
       const maxAllowed = getMaxAllowed(resolvedStock);
       
       if (maxAllowed <= 0) return prev;
@@ -295,10 +311,11 @@ export const CartProvider = ({ children }) => {
 
     const selectedVariant = resolveVariantForProduct(product, options);
     const selectedVariantId = getVariantId(selectedVariant);
-    const resolvedFinalPrice = selectedVariant ? selectedVariant.finalPrice : 0;
-    const resolvedOriginalPrice = selectedVariant ? selectedVariant.originalPrice : 0;
-    const resolvedDiscountPercent = selectedVariant ? selectedVariant.discountPercent : 0;
-    const resolvedStock = selectedVariant ? toNumber(selectedVariant.stock, toNumber(product.stock, 0)) : toNumber(product.stock, 0);
+    const legacy = resolveLegacyProductPricing(product);
+    const resolvedFinalPrice = selectedVariant ? selectedVariant.finalPrice : legacy.finalPrice;
+    const resolvedOriginalPrice = selectedVariant ? selectedVariant.originalPrice : legacy.originalPrice;
+    const resolvedDiscountPercent = selectedVariant ? selectedVariant.discountPercent : legacy.discountPercent;
+    const resolvedStock = selectedVariant ? toNumber(selectedVariant.stock, legacy.stock) : legacy.stock;
     const maxAllowed = getMaxAllowed(resolvedStock);
 
     if (maxAllowed <= 0) return;

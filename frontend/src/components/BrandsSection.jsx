@@ -2,12 +2,12 @@ import { BadgeCheck, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useProducts } from "../context/ProductContext";
 
-const getBrandLogoUrl = (brand = {}) => {
-  if (brand.logo && String(brand.logo).startsWith("http")) return brand.logo;
-  const token = String(brand.name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
-  if (!token) return "";
-  return `https://logo.clearbit.com/${token}.com`;
-};
+const BRAND_FALLBACK_BACKGROUNDS = [
+  "linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)",
+  "linear-gradient(135deg, #0b132b 0%, #155e75 100%)",
+  "linear-gradient(135deg, #1e1b4b 0%, #1d4ed8 100%)",
+  "linear-gradient(135deg, #111827 0%, #334155 100%)",
+];
 
 const BrandsSection = () => {
   const navigate = useNavigate();
@@ -49,37 +49,26 @@ const BrandsSection = () => {
             {displayBrands.map((brand) => {
               const id = brand._id || brand.id;
               const label = brand.name || "Brand";
-              const logo = getBrandLogoUrl(brand);
+              const image = String(brand.image || "").trim();
+              const fallbackBackground = BRAND_FALLBACK_BACKGROUNDS[id ? String(id).length % BRAND_FALLBACK_BACKGROUNDS.length : 0];
 
               return (
                 <button
                   key={id}
                   onClick={() => navigate(`/products?search=${encodeURIComponent(label)}`)}
-                  className="group h-24 sm:h-28 rounded-2xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-lg hover:shadow-blue-100/50 hover:-translate-y-0.5 transition-all duration-300 px-4"
+                  className="group relative h-32 sm:h-36 lg:h-40 rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-100/40 hover:-translate-y-0.5 transition-all duration-300"
                 >
-                  <div className="w-full h-full flex items-center justify-center gap-3">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                      {logo ? (
-                        <img
-                          src={logo}
-                          alt={`${label} logo`}
-                          className="w-8 h-8 object-contain"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                            e.currentTarget.parentElement?.classList.add("bg-blue-50");
-                          }}
-                        />
-                      ) : (
-                        <span className="text-sm font-black text-blue-700">{label.slice(0, 2).toUpperCase()}</span>
-                      )}
-                    </div>
+                  <div
+                    className="absolute inset-0 bg-center bg-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                    style={image ? { backgroundImage: `url(${image})` } : { background: fallbackBackground }}
+                  />
 
-                    <div className="min-w-0 text-left">
-                      <p className="text-sm sm:text-base font-bold text-slate-800 truncate group-hover:text-blue-700 transition-colors">
-                        {label}
-                      </p>
-                      <p className="text-[11px] font-semibold text-slate-400 group-hover:text-blue-500 transition-colors">View products</p>
-                    </div>
+                  {/* Dark overlay keeps text readable over bright images. */}
+                  <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-slate-900/35 to-slate-900/15" />
+
+                  <div className="relative z-10 h-full w-full flex flex-col justify-end p-4 sm:p-5 text-left">
+                    <p className="text-white text-base sm:text-lg font-extrabold leading-tight truncate drop-shadow-sm">{label}</p>
+                    <p className="text-blue-100/90 text-xs sm:text-sm font-semibold mt-1">Explore Collection</p>
                   </div>
                 </button>
               );

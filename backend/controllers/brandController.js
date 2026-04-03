@@ -1,6 +1,11 @@
 const asyncHandler = require("express-async-handler");
 const Brand = require("../models/Brand");
 
+const normalizeImageUrl = (value) => {
+  const raw = String(value || "").trim();
+  return raw;
+};
+
 // GET /api/brands
 const getBrands = asyncHandler(async (req, res) => {
   const onlyFeatured = String(req.query.featured || "").toLowerCase() === "true";
@@ -25,6 +30,7 @@ const createBrand = asyncHandler(async (req, res) => {
 
   const brand = await Brand.create({
     name,
+    image: normalizeImageUrl(req.body.image),
     isFeatured: !!(req.body.isFeatured ?? req.body.showInNavbar ?? false),
   });
 
@@ -53,6 +59,10 @@ const updateBrand = asyncHandler(async (req, res) => {
     }
 
     brand.name = nextName;
+  }
+
+  if (req.body.image !== undefined) {
+    brand.image = normalizeImageUrl(req.body.image);
   }
 
   if (req.body.isFeatured !== undefined || req.body.showInNavbar !== undefined) {

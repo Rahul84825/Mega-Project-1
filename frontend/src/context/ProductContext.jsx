@@ -81,6 +81,7 @@ const normalizeBrand = (b = {}) => {
     ...b,
     id: b._id || b.id,
     name: b.name || "",
+    image: b.image || "",
     isFeatured: !!isFeatured,
     showInNavbar: !!isFeatured,
   };

@@ -152,8 +152,14 @@ const ProductDetails = () => {
     .filter((variant) => variant.label && variant.finalPrice > 0);
 
   const selectedVariant = normalizedVariants.find((variant) => variant.id === String(selectedVariantId)) || normalizedVariants[0] || null;
+  const hasVariants = normalizedVariants.length > 0;
 
-  const productStock = selectedVariant ? Number(selectedVariant.stock ?? 0) : 0;
+  // Legacy fallback for products that still use product-level price/stock.
+  const legacyFinalPrice = Number(product?.price ?? 0);
+  const legacyOriginalPrice = Number(product?.originalPrice ?? product?.mrp ?? legacyFinalPrice);
+  const legacyStock = Math.max(0, Math.floor(Number(product?.stock ?? 0)));
+
+  const productStock = selectedVariant ? Number(selectedVariant.stock ?? 0) : legacyStock;
   const selectedVariantKey = selectedVariant ? String(selectedVariant.id) : null;
   const cartQty = (cartItems || [])
     .filter((item) => {
@@ -227,9 +233,13 @@ const ProductDetails = () => {
   const isEmojiImage = product.image && !product.image.startsWith("http");
 
   // Use variant-based pricing
-  const displayFinalPrice = Math.round(selectedVariant?.finalPrice ?? 0);
-  const displayOriginalPrice = Math.round(selectedVariant?.originalPrice ?? displayFinalPrice);
-  const displayDiscount = selectedVariant?.discountPercent ?? 0;
+  const displayFinalPrice = Math.round(hasVariants ? (selectedVariant?.finalPrice ?? 0) : legacyFinalPrice);
+  const displayOriginalPrice = Math.round(hasVariants ? (selectedVariant?.originalPrice ?? displayFinalPrice) : legacyOriginalPrice);
+  const displayDiscount = hasVariants
+    ? (selectedVariant?.discountPercent ?? 0)
+    : (displayOriginalPrice > displayFinalPrice && displayOriginalPrice > 0
+      ? Math.round(((displayOriginalPrice - displayFinalPrice) / displayOriginalPrice) * 100)
+      : 0);
   const savings = displayOriginalPrice > displayFinalPrice ? Math.round(displayOriginalPrice - displayFinalPrice) : 0;
   const categoryLabel = getCategoryLabel(product.category, categories);
   const categorySlug  = getCategorySlug(product.category, categories);
@@ -381,7 +391,7 @@ const ProductDetails = () => {
                 <span className="text-xs text-gray-400">Max {Math.min(displayStock, 10)} per order</span>
               </div>
             )}
-            {displayInStock && qty > 1 && <p className="text-xs text-gray-500 mb-4">Total: <span className="font-bold text-gray-800">{formatPrice(displayPrice * qty)}</span></p>}
+            {displayInStock && qty > 1 && <p className="text-xs text-gray-500 mb-4">Total: <span className="font-bold text-gray-800">{formatPrice(displayFinalPrice * qty)}</span></p>}
 
             {displayInStock && remainingStock <= 0 ? (
               <p className="text-sm font-semibold text-rose-500 mb-4">

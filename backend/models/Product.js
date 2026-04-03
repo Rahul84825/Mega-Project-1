@@ -35,10 +35,10 @@ const productSchema = new mongoose.Schema(
     name:          { type: String, required: true, trim: true },
     description:   { type: String, default: "" },
     category_id:   { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
-    // REMOVED: Product-level pricing. Use variant pricing instead.
-    // price:         { type: Number, required: true, min: 0 },  // ❌ REMOVED
-    // originalPrice: { type: Number, min: 0 },                   // ❌ REMOVED
-    // mrp:           { type: Number, min: 0 },                   // ❌ REMOVED
+    // Deprecated product-level pricing kept for legacy products during migration.
+    price:         { type: Number, min: 0, default: undefined },
+    originalPrice: { type: Number, min: 0, default: undefined },
+    mrp:           { type: Number, min: 0, default: undefined },
     image:         { type: String, default: "" },
     images:        { type: [String], default: [] },
     inStock:       { type: Boolean, default: true },

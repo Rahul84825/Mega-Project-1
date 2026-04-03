@@ -1,17 +1,23 @@
 import { useMemo, useState } from "react";
-import { PlusCircle, Pencil, Trash2, X, Save, ToggleLeft, ToggleRight } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, X, Save, ToggleLeft, ToggleRight, UploadCloud, Image as ImageIcon } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
+import { api } from "../utils/api";
 
-const EMPTY_FORM = { name: "", isFeatured: false };
+const EMPTY_FORM = { name: "", image: "", isFeatured: false };
 
 const BrandModal = ({ brand, onSave, onClose }) => {
   const [form, setForm] = useState(() => ({
     ...EMPTY_FORM,
     ...(brand || {}),
     name: brand?.name || "",
+    image: brand?.image || "",
     isFeatured: brand?.isFeatured ?? brand?.showInNavbar ?? false,
   }));
   const [errors, setErrors] = useState({});
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const token = localStorage.getItem("token");
 
   const set = (k, v) => {
     setForm((prev) => ({ ...prev, [k]: v }));
@@ -26,9 +32,39 @@ const BrandModal = ({ brand, onSave, onClose }) => {
 
     onSave({
       name: String(form.name || "").trim(),
+      image: String(form.image || "").trim(),
       isFeatured: !!form.isFeatured,
     });
     onClose();
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select a valid image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image must be under 5MB.");
+      return;
+    }
+
+    setUploadError("");
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const data = await api.upload("/api/upload", formData, token);
+      set("image", data.url || "");
+    } catch (err) {
+      setUploadError(err.message || "Image upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const inputClass = (hasError) =>
@@ -58,6 +94,40 @@ const BrandModal = ({ brand, onSave, onClose }) => {
               className={inputClass(errors.name)}
             />
             {errors.name && <p className="text-[11px] font-bold text-rose-500 mt-1.5">{errors.name}</p>}
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Brand Background Image</label>
+
+            {!!form.image ? (
+              <div className="relative w-full h-36 rounded-2xl overflow-hidden border border-slate-200 mb-3">
+                <img src={form.image} alt="Brand preview" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-slate-900/35" />
+                <div className="absolute bottom-2 left-2 text-[10px] font-bold text-white bg-slate-900/70 px-2 py-1 rounded-md">Preview</div>
+              </div>
+            ) : (
+              <div className="w-full h-36 rounded-2xl border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center text-slate-400 mb-3">
+                <ImageIcon className="w-6 h-6 mb-1" />
+                <p className="text-xs font-semibold">No image selected</p>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <label className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-semibold cursor-pointer hover:border-blue-300 hover:text-blue-700 transition-colors">
+                <UploadCloud className="w-4 h-4" />
+                {uploading ? "Uploading..." : "Upload Image"}
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+              </label>
+
+              <input
+                value={form.image}
+                onChange={(e) => set("image", e.target.value)}
+                placeholder="Or paste image URL"
+                className={inputClass(false)}
+              />
+            </div>
+
+            {uploadError && <p className="text-[11px] font-bold text-rose-500 mt-1.5">{uploadError}</p>}
           </div>
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
@@ -128,6 +198,15 @@ const AdminBrands = () => {
 
           return (
             <div key={id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-300 p-5 flex flex-col group">
+              <div className="relative w-full h-28 rounded-xl overflow-hidden border border-slate-200 mb-4 bg-slate-100">
+                {brand.image ? (
+                  <img src={brand.image} alt={brand.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">No Image</div>
+                )}
+                <div className="absolute inset-0 bg-slate-900/35" />
+              </div>
+
               <div className="flex items-start justify-between gap-3 mb-3">
                 <h3 className="text-base font-extrabold text-slate-900 leading-tight">{brand.name}</h3>
                 <div className="flex gap-1 bg-slate-50 rounded-lg p-1 border border-slate-100 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-200">

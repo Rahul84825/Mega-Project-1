@@ -58,12 +58,12 @@ const AdminProductForm = ({ mode = "add" }) => {
     stock: "0",
   });
 
-  const normalizeIncomingVariantsLocal = (variants, fallbackStock = "0") => {
+  const normalizeIncomingVariantsLocal = (variants, fallbackOriginalPrice = "", fallbackStock = "0") => {
     if (!Array.isArray(variants) || variants.length === 0) {
       return [{
         id: createVariantId(),
         label: "Default",
-        originalPrice: "",
+        originalPrice: fallbackOriginalPrice !== "" ? String(fallbackOriginalPrice) : "",
         discountPercent: "0",
         stock: fallbackStock !== "" ? String(fallbackStock) : "0",
       }];
@@ -135,7 +135,11 @@ const AdminProductForm = ({ mode = "add" }) => {
           brand:       product.brand       || "",
           tags:        (product.tags || []).join(", "),
           isHero:      !!product.isHero,
-          variants:    normalizeIncomingVariantsLocal(product.variants, product.stock || "0"),
+          variants:    normalizeIncomingVariantsLocal(
+            product.variants,
+            product.originalPrice ?? product.mrp ?? product.price ?? "",
+            product.stock || "0"
+          ),
         });
         formPopulated.current = true;  
       }
@@ -161,7 +165,7 @@ const AdminProductForm = ({ mode = "add" }) => {
               // Never restore images/files from localStorage.
               image: "",
               images: [],
-              variants: normalizeIncomingVariantsLocal(draft.variants, "0"),
+              variants: normalizeIncomingVariantsLocal(draft.variants, "", "0"),
             }
           : prev;
 
