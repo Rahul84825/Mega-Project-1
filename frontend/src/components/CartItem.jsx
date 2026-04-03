@@ -1,5 +1,6 @@
 import { Trash2, Plus, Minus } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { formatPrice } from "../utils/priceCalculator";
 
 const CartItem = ({ item }) => {
   const { updateQuantity, removeFromCart } = useCart();
@@ -54,7 +55,7 @@ const CartItem = ({ item }) => {
 
           {/* Price */}
           <p className="text-sm font-black text-slate-900">
-            ₹{((item.finalPrice || item.final_price || item.price || 0) * item.quantity).toLocaleString()}
+            {formatPrice((item.finalPrice || item.final_price || item.price || 0) * item.quantity)}
           </p>
         </div>
       </div>

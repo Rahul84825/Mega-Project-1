@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, UploadCloud, Image as ImageIcon, Tag, AlertCircle, CheckCircle2, X, Plus, Trash2 } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 import { api } from "../utils/api";
-import { calculateFinalPrice } from "../utils/priceCalculator";
+import { calculateFinalPrice, formatPrice } from "../utils/priceCalculator";
 
 const EMPTY_FORM = {
   name: "", category: "",
@@ -619,7 +619,7 @@ const AdminProductForm = ({ mode = "add" }) => {
                         />
                         {finalPrice > 0 && (
                           <div className="text-[10px] font-bold text-slate-500 whitespace-nowrap">
-                            = ₹{finalPrice}
+                            = {formatPrice(finalPrice)}
                           </div>
                         )}
                       </div>

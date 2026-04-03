@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 import { DeliveryNotice } from "./DeliveryNotice";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
-import { calculateFinalPrice } from "../utils/priceCalculator";
+import { calculateFinalPrice, formatPrice } from "../utils/priceCalculator";
 
 const toNumber = (value, fallback = 0) => {
   const n = Number(value);
@@ -161,16 +161,16 @@ export const ProductCard = memo(({ product, onCartOpen }) => {
         {/* Pricing */}
         <div className="flex flex-wrap items-end gap-1.5 sm:gap-2 mt-auto mb-4 sm:mb-5">
           <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            ₹{displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+            {formatPrice(displayPrice)}
           </span>
           {displayOriginalPrice > displayPrice && (
             <span className="text-xs sm:text-sm font-medium text-slate-400 line-through mb-0.5">
-              ₹{displayOriginalPrice.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              {formatPrice(displayOriginalPrice)}
             </span>
           )}
           {savedAmount > 0 && (
             <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md ml-auto border border-emerald-100">
-              Save ₹{savedAmount.toLocaleString()}
+              Save {formatPrice(savedAmount)}
             </span>
           )}
         </div>

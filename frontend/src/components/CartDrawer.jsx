@@ -4,6 +4,7 @@ import { X, ShoppingBag, ArrowRight, ShoppingCart } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import CartItem from "./CartItem";
+import { formatPrice } from "../utils/priceCalculator";
 
 const CartDrawer = ({ isOpen, onClose }) => {
   const { cartItems, cartTotal, cartCount } = useCart();
@@ -113,26 +114,26 @@ const CartDrawer = ({ isOpen, onClose }) => {
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between text-slate-500">
                 <span>Subtotal</span>
-                <span className="font-medium text-slate-700">₹{cartTotal.toLocaleString()}</span>
+                <span className="font-medium text-slate-700">{formatPrice(cartTotal)}</span>
               </div>
               <div className="flex justify-between text-slate-500">
                 <span>Delivery</span>
                 {delivery === 0 ? (
                   <span className="text-emerald-600 font-semibold">FREE</span>
                 ) : (
-                  <span className="font-medium text-slate-700">₹{delivery}</span>
+                  <span className="font-medium text-slate-700">{formatPrice(delivery)}</span>
                 )}
               </div>
               {delivery > 0 && (
                 <p className="text-[11px] text-slate-400">
-                  Add ₹{(999 - cartTotal).toLocaleString()} more for free delivery
+                  Add {formatPrice(999 - cartTotal)} more for free delivery
                 </p>
               )}
             </div>
 
             <div className="flex justify-between items-center pt-2 border-t border-slate-100">
               <span className="font-bold text-slate-900">Total</span>
-              <span className="text-xl font-black text-slate-900">₹{grandTotal.toLocaleString()}</span>
+              <span className="text-xl font-black text-slate-900">{formatPrice(grandTotal)}</span>
             </div>
 
             <button

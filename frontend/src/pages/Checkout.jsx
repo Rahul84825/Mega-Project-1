@@ -11,6 +11,7 @@ import { useAuth } from "../context/AuthContext";
 import { QRCodeSVG } from "qrcode.react";
 import { checkDeliveryEligibility, MAX_DELIVERY_RADIUS_KM } from "../utils/delivery";
 import { DeliveryNotice } from "../components/DeliveryNotice";
+import { formatPrice } from "../utils/priceCalculator";
 
 const STEPS = ["Address", "Payment", "Confirm"];
 
@@ -157,7 +158,7 @@ const PaymentForm = ({ selected, onSelect, errors, orderTotal }) => {
                     className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors"
                   >
                     <Smartphone className="w-4 h-4" />
-                    Pay ₹{orderTotal.toLocaleString("en-IN")} via UPI
+                    Pay {formatPrice(orderTotal)} via UPI
                   </a>
                   <p className="text-[11px] text-green-600 mt-2 text-center">UPI ID: {UPI_ID}</p>
                 </div>
@@ -239,21 +240,21 @@ const OrderSummary = ({ items, subTotal, codFee = 0, isBuyNowFlow = false, onUpd
                   </div>
                 )}
               </div>
-              <p className="text-xs font-bold text-gray-900 flex-shrink-0">₹{linePrice.toLocaleString("en-IN")}</p>
+              <p className="text-xs font-bold text-gray-900 flex-shrink-0">{formatPrice(linePrice)}</p>
             </div>
           );
         })}
       </div>
       <div className="space-y-2 text-sm border-t border-gray-100 pt-4">
-        <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{safeCartTotal.toLocaleString("en-IN")}</span></div>
-        {savings > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>− ₹{savings.toLocaleString("en-IN")}</span></div>}
+        <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>{formatPrice(safeCartTotal)}</span></div>
+        {savings > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>− {formatPrice(savings)}</span></div>}
         <div className="flex justify-between text-gray-600">
           <span>Delivery</span>
-          {delivery === 0 ? <span className="text-green-600 font-medium">FREE</span> : <span>₹{delivery}</span>}
+          {delivery === 0 ? <span className="text-green-600 font-medium">FREE</span> : <span>{formatPrice(delivery)}</span>}
         </div>
-        {codFee > 0 && <div className="flex justify-between text-orange-600"><span>COD Fee</span><span>₹{codFee}</span></div>}
+        {codFee > 0 && <div className="flex justify-between text-orange-600"><span>COD Fee</span><span>{formatPrice(codFee)}</span></div>}
         <div className="flex justify-between font-bold text-base text-gray-900 border-t border-dashed border-gray-200 pt-2">
-          <span>Total</span><span>₹{total.toLocaleString("en-IN")}</span>
+          <span>Total</span><span>{formatPrice(total)}</span>
         </div>
       </div>
     </div>
@@ -295,7 +296,7 @@ const OrderConfirmation = ({ orderId, dbOrderId, address = {}, paymentMethod = "
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-left mb-5 space-y-3 text-sm">
         {[
           ["Order ID",    `#${orderId}`],
-          ["Amount",      `₹${total.toLocaleString("en-IN")}`],
+            ["Amount",      formatPrice(total)],
           ["Payment",     paymentMethod === "cod" ? "Cash on Delivery" : "UPI"],
           ["Deliver to",  `${address.address1}, ${address.city} — ${address.pincode}`],
           ["Est. Delivery", "3–5 Business Days"],
@@ -698,7 +699,7 @@ const Checkout = () => {
                 ) : step === 0 ? (
                   <>Continue to Payment <ChevronRight className="w-4 h-4" /></>
                 ) : (
-                  <>Place Order · ₹{currentTotal.toLocaleString("en-IN")} <ChevronRight className="w-4 h-4" /></>
+                  <>Place Order · {formatPrice(currentTotal)} <ChevronRight className="w-4 h-4" /></>
                 )}
               </button>
             </div>

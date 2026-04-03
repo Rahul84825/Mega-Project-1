@@ -3,6 +3,7 @@ import { Search, Eye, X, Package, User, MapPin, CreditCard, ShoppingBag, CheckCi
 import { io } from "socket.io-client";
 import { useProducts } from "../context/ProductContext";
 import { useAuth } from "../context/AuthContext";
+import { formatPrice } from "../utils/priceCalculator";
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/api\/?$/, "");
 
@@ -115,7 +116,7 @@ const OrderModal = ({ order, onClose, onMarkDelivered, onMarkPaid, delivering, m
                       <p className="text-sm text-gray-500">Qty: {item.qty || item.quantity}</p>
                     </div>
                     <p className="font-semibold text-gray-900">
-                      ₹{Number(item.price || 0).toLocaleString("en-IN")}
+                      {formatPrice(Number(item.price || 0))}
                     </p>
                   </div>
                 ))
@@ -133,16 +134,16 @@ const OrderModal = ({ order, onClose, onMarkDelivered, onMarkPaid, delivering, m
             </div>
             <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
               <div className="flex justify-between text-gray-600">
-                <span>Subtotal</span><span>₹{(order.subtotal || 0).toLocaleString("en-IN")}</span>
+                <span>Subtotal</span><span>{formatPrice(order.subtotal || 0)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Delivery</span>
                 {order.delivery === 0
                   ? <span className="text-green-600 font-medium">FREE</span>
-                  : <span>₹{order.delivery || 0}</span>}
+                  : <span>{formatPrice(order.delivery || 0)}</span>}
               </div>
               <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-2">
-                <span>Total</span><span>₹{(order.total || 0).toLocaleString("en-IN")}</span>
+                <span>Total</span><span>{formatPrice(order.total || 0)}</span>
               </div>
               <div className="flex justify-between text-gray-500 text-xs pt-1">
                 <span>Payment Method</span>
@@ -332,7 +333,7 @@ const AdminOrders = () => {
         <div>
           <h2 className="text-xl font-bold text-gray-900">Orders</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            {orders.length} total orders · ₹{totalRevenue.toLocaleString("en-IN")} revenue
+            {orders.length} total orders · {formatPrice(totalRevenue)} revenue
           </p>
         </div>
       </div>
@@ -404,7 +405,7 @@ const AdminOrders = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 font-bold text-gray-900">
-                        ₹{(order.total || 0).toLocaleString("en-IN")}
+                        {formatPrice(order.total || 0)}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs font-semibold px-2 py-1 rounded-full

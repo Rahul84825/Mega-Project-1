@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
 import { toast } from "react-toastify";
+import { formatPrice } from "../utils/priceCalculator";
 
 const AdminProducts = () => {
   const { products, categories, deleteProduct, toggleStock, setHeroProduct, refresh } = useProducts();
@@ -185,9 +186,9 @@ const AdminProducts = () => {
                       </td>
 
                       <td className="px-6 py-3">
-                        <p className="font-black text-slate-900">₹{pricing.finalPrice.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+                        <p className="font-black text-slate-900">{formatPrice(pricing.finalPrice)}</p>
                         {pricing.originalPrice > pricing.finalPrice && (
-                          <p className="text-xs text-slate-400 line-through">₹{pricing.originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+                          <p className="text-xs text-slate-400 line-through">{formatPrice(pricing.originalPrice)}</p>
                         )}
                       </td>
 

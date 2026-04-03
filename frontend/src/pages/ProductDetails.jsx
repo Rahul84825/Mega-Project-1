@@ -11,7 +11,7 @@ import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
 import { useAuth } from "../context/AuthContext";
 import { getCategoryLabel, getCategorySlug } from "../utils/category";
-import { calculateFinalPrice } from "../utils/priceCalculator";
+import { calculateFinalPrice, formatPrice } from "../utils/priceCalculator";
 import { io } from "socket.io-client";
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/api\/?$/, "");
@@ -305,12 +305,12 @@ const ProductDetails = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 leading-tight">{product.name}</h1>
 
             <div className="flex items-baseline gap-3 mb-2">
-              <span className="text-3xl font-bold text-gray-900">₹{displayFinalPrice.toLocaleString("en-IN")}</span>
+              <span className="text-3xl font-bold text-gray-900">{formatPrice(displayFinalPrice)}</span>
               {displayOriginalPrice > displayFinalPrice && (
-                <span className="text-lg text-gray-400 line-through">₹{displayOriginalPrice.toLocaleString("en-IN")}</span>
+                <span className="text-lg text-gray-400 line-through">{formatPrice(displayOriginalPrice)}</span>
               )}
             </div>
-            {savings > 0 && <p className="text-sm font-semibold text-green-600 mb-4">You save ₹{savings.toLocaleString("en-IN")} ({Math.round(displayDiscount)}% off)</p>}
+            {savings > 0 && <p className="text-sm font-semibold text-green-600 mb-4">You save {formatPrice(savings)} ({Math.round(displayDiscount)}% off)</p>}
 
             <div className="flex items-center gap-2 mb-6">
               <span className={`w-2.5 h-2.5 rounded-full ${displayInStock ? "bg-green-500" : "bg-red-400"}`} />
@@ -381,7 +381,7 @@ const ProductDetails = () => {
                 <span className="text-xs text-gray-400">Max {Math.min(displayStock, 10)} per order</span>
               </div>
             )}
-            {displayInStock && qty > 1 && <p className="text-xs text-gray-500 mb-4">Total: <span className="font-bold text-gray-800">₹{(displayPrice * qty).toLocaleString("en-IN")}</span></p>}
+            {displayInStock && qty > 1 && <p className="text-xs text-gray-500 mb-4">Total: <span className="font-bold text-gray-800">{formatPrice(displayPrice * qty)}</span></p>}
 
             {displayInStock && remainingStock <= 0 ? (
               <p className="text-sm font-semibold text-rose-500 mb-4">

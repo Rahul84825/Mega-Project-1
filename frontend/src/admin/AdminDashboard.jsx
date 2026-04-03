@@ -6,6 +6,7 @@ import {
   IndianRupee, ChevronRight, Users
 } from "lucide-react";
 import { useProducts } from "../context/ProductContext";
+import { formatPrice } from "../utils/priceCalculator";
 
 const StatCard = ({ label, value, sub, icon: Icon, color, bg, onClick }) => (
   <div
@@ -105,7 +106,7 @@ const AdminDashboard = () => {
 
       {/* ── Metric Cards Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-        <StatCard label="Total Revenue" value={`₹${totalRevenue.toLocaleString("en-IN")}`} sub="From all confirmed orders"
+        <StatCard label="Total Revenue" value={formatPrice(totalRevenue)} sub="From all confirmed orders"
           icon={IndianRupee} color="text-emerald-600" bg="bg-emerald-50" />
         <StatCard label="Total Orders" value={totalOrders} sub="Awaiting processing or completed"
           icon={ShoppingBag} color="text-blue-600" bg="bg-blue-50"

@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
 import { getCategoryLabel } from "../utils/category";
-import { calculateFinalPrice } from "../utils/priceCalculator";
+import { calculateFinalPrice, formatPrice } from "../utils/priceCalculator";
 
 const ProductCard = ({ product, onQuickView, compact = false }) => {
   const [imgError, setImgError] = useState(false);
@@ -190,17 +190,17 @@ const ProductCard = ({ product, onQuickView, compact = false }) => {
         {/* Pricing */}
         <div className="mt-auto mb-3.5 flex items-end gap-2">
           <span className="text-xl font-black tracking-tight text-slate-900">
-            ₹{finalPrice.toLocaleString("en-IN")}
+            {formatPrice(finalPrice)}
           </span>
           {originalPrice > finalPrice && (
             <span className="mb-0.5 text-sm font-medium text-slate-400 line-through">
-              ₹{originalPrice.toLocaleString("en-IN")}
+              {formatPrice(originalPrice)}
             </span>
           )}
           {discountPercent > 0 && (
             <span className="ml-auto rounded-lg bg-emerald-50 border border-emerald-100 px-2 py-0.5
                              text-[10px] font-bold text-emerald-700">
-              Save ₹{savingsAmount.toLocaleString("en-IN")}
+              Save {formatPrice(savingsAmount)}
             </span>
           )}
         </div>

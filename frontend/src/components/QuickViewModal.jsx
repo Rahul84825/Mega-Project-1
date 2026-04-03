@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../context/ProductContext";
 import { getCategoryLabel } from "../utils/category";
-import { calculateFinalPrice } from "../utils/priceCalculator";
+import { calculateFinalPrice, formatPrice } from "../utils/priceCalculator";
 
 const QuickViewModal = ({ product, onClose }) => {
   const navigate = useNavigate();
@@ -73,9 +73,9 @@ const QuickViewModal = ({ product, onClose }) => {
           )}
 
           <div className="flex items-end gap-2 mb-6 mt-auto">
-            <span className="text-3xl font-black text-slate-900">₹{finalPrice.toLocaleString("en-IN")}</span>
+            <span className="text-3xl font-black text-slate-900">{formatPrice(finalPrice)}</span>
             {originalPrice > finalPrice && (
-              <span className="text-sm text-slate-400 line-through pb-1">₹{originalPrice.toLocaleString("en-IN")}</span>
+              <span className="text-sm text-slate-400 line-through pb-1">{formatPrice(originalPrice)}</span>
             )}
             {discountPercent > 0 && (
               <span className="ml-auto text-xs font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1">

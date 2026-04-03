@@ -9,6 +9,7 @@ const toFiniteNumber = (value, fallback = 0) => {
 };
 
 const roundMoney = (value) => Math.round((toFiniteNumber(value, 0) + Number.EPSILON) * 100) / 100;
+const inrFormatter = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
 
 /**
  * Calculate final price based on original price and discount percentage
@@ -50,7 +51,7 @@ export const calculateSavings = (originalPrice, finalPrice) => {
  */
 export const formatPrice = (price) => {
   const num = Math.max(0, toFiniteNumber(price, 0));
-  return `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  return `₹${inrFormatter.format(Math.round(num))}`;
 };
 
 /**
