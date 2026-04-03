@@ -68,10 +68,6 @@ const QuickViewModal = ({ product, onClose }) => {
             </div>
           )}
 
-          {!!product.description && (
-            <p className="text-sm text-slate-600 leading-relaxed mb-5 line-clamp-4">{product.description}</p>
-          )}
-
           <div className="flex items-end gap-2 mb-6 mt-auto">
             <span className="text-3xl font-black text-slate-900">{formatPrice(finalPrice)}</span>
             {originalPrice > finalPrice && (

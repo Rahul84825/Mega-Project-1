@@ -153,7 +153,6 @@ const getProducts = asyncHandler(async (req, res) => {
   if (search) {
     filter.$or = [
       { name:        { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
     ];
   }
 
@@ -186,7 +185,7 @@ const getProductById = asyncHandler(async (req, res) => {
 
 // ── POST /api/products (admin) ────────────────────────────────────────────────
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, description, category, category_id, inStock, specifications, isHero } = req.body;
+  const { name, category, category_id, inStock, specifications, isHero } = req.body;
   const resolvedCategoryId = category_id || category;
 
   if (!name || !resolvedCategoryId) {
@@ -209,7 +208,6 @@ const createProduct = asyncHandler(async (req, res) => {
 
   const product = await Product.create({
     name,
-    description,
     category_id: resolvedCategoryId,
     // NO LONGER setting product-level price fields
     image:  primaryImage,
@@ -239,7 +237,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (!product) { res.status(404); throw new Error("Product not found"); }
 
   // Updated fields list: removed product-level price fields
-  const fields = ["name", "description", "image", "images", "inStock", "brand", "tags", "specifications", "isHero"];
+  const fields = ["name", "image", "images", "inStock", "brand", "tags", "specifications", "isHero"];
   fields.forEach((f) => { 
     if (req.body[f] !== undefined) {
       product[f] = req.body[f];

@@ -17,18 +17,18 @@ const CATEGORIES = [
 ];
 
 const PRODUCTS = [
-  { name: "Stainless Steel Kadai",       category: "steel",      original_price: 1199, discount_percentage: 25, inStock: true,  image: "🥘", description: "Premium quality stainless steel kadai, ideal for everyday cooking." },
-  { name: "Copper Water Jug 1L",         category: "copper",     original_price: 850,  discount_percentage: 24, inStock: true,  image: "🏺", description: "Pure copper water jug for health benefits." },
-  { name: "Brass Puja Thali Set",        category: "pooja",      original_price: 1699, discount_percentage: 24, inStock: true,  image: "🪔", description: "Complete brass puja thali set for daily worship." },
-  { name: "Prestige Mixer Grinder 750W", category: "appliances", original_price: 4499, discount_percentage: 22, inStock: true,  image: "🔌", description: "Powerful 750W mixer grinder with 3 jars." },
-  { name: "Brass Lota Kalash 500ml",     category: "brass",      original_price: 550,  discount_percentage: 24, inStock: false, image: "✨", description: "Traditional brass lota for puja and daily use." },
-  { name: "SS Tiffin Box 3 Layer",       category: "steel",      original_price: 699,  discount_percentage: 29, inStock: true,  image: "🥘", description: "Leak-proof 3 layer stainless steel tiffin box." },
-  { name: "Copper Bottle 1.5L",          category: "copper",     original_price: 999,  discount_percentage: 20, inStock: true,  image: "🏺", description: "Pure copper water bottle for Ayurvedic health benefits." },
-  { name: "Gas Stove 3 Burner ISI",      category: "appliances", original_price: 3299, discount_percentage: 15, inStock: true,  image: "🔌", description: "ISI certified 3 burner gas stove with auto ignition." },
-  { name: "Brass Diya Set of 6",         category: "pooja",      original_price: 499,  discount_percentage: 30, inStock: true,  image: "🪔", description: "Beautiful brass diya set for festivals and daily puja." },
-  { name: "SS Pressure Cooker 5L",       category: "steel",      original_price: 1599, discount_percentage: 25, inStock: false, image: "🥘", description: "Heavy duty stainless steel pressure cooker." },
-  { name: "Pital Kadai 2L",             category: "brass",      original_price: 1200, discount_percentage: 21, inStock: true,  image: "✨", description: "Traditional pital (brass) kadai for authentic cooking." },
-  { name: "Electric Pressure Cooker 6L", category: "appliances", original_price: 5499, discount_percentage: 22, inStock: true,  image: "🔌", description: "Smart electric pressure cooker with 12 cooking modes." },
+  { name: "Stainless Steel Kadai",       category: "steel",      original_price: 1199, discount_percentage: 25, inStock: true,  image: "🥘" },
+  { name: "Copper Water Jug 1L",         category: "copper",     original_price: 850,  discount_percentage: 24, inStock: true,  image: "🏺" },
+  { name: "Brass Puja Thali Set",        category: "pooja",      original_price: 1699, discount_percentage: 24, inStock: true,  image: "🪔" },
+  { name: "Prestige Mixer Grinder 750W", category: "appliances", original_price: 4499, discount_percentage: 22, inStock: true,  image: "🔌" },
+  { name: "Brass Lota Kalash 500ml",     category: "brass",      original_price: 550,  discount_percentage: 24, inStock: false, image: "✨" },
+  { name: "SS Tiffin Box 3 Layer",       category: "steel",      original_price: 699,  discount_percentage: 29, inStock: true,  image: "🥘" },
+  { name: "Copper Bottle 1.5L",          category: "copper",     original_price: 999,  discount_percentage: 20, inStock: true,  image: "🏺" },
+  { name: "Gas Stove 3 Burner ISI",      category: "appliances", original_price: 3299, discount_percentage: 15, inStock: true,  image: "🔌" },
+  { name: "Brass Diya Set of 6",         category: "pooja",      original_price: 499,  discount_percentage: 30, inStock: true,  image: "🪔" },
+  { name: "SS Pressure Cooker 5L",       category: "steel",      original_price: 1599, discount_percentage: 25, inStock: false, image: "🥘" },
+  { name: "Pital Kadai 2L",             category: "brass",      original_price: 1200, discount_percentage: 21, inStock: true,  image: "✨" },
+  { name: "Electric Pressure Cooker 6L", category: "appliances", original_price: 5499, discount_percentage: 22, inStock: true,  image: "🔌" },
 ];
 
 const OFFERS = [
@@ -77,7 +77,7 @@ const seed = async () => {
       const { category, ...rest } = p;
       const resolvedCategoryId = categoryIdMap[category];
       if (!resolvedCategoryId) {
-        throw new Error(`Missing category mapping for product \"${p.name}\" (category: ${category})`);
+        throw new Error(`Missing category mapping for product "${p.name}" (category: ${category})`);
       }
 
       return {

@@ -3,127 +3,92 @@ const mongoose = require("mongoose");
 
 const connectDB = require("./config/db");
 const Category = require("./models/Category");
-const Product = require("./models/Product");
 
 dotenv.config();
 
 const CATEGORIES = [
-  { key: "Hawkins", name: "Hawkins" },
   { key: "Prestige", name: "Prestige" },
   { key: "Stahl", name: "Stahl" },
   { key: "Milton", name: "Milton" },
   { key: "Bajaj", name: "Bajaj" },
-  { key: "SignoraWare", name: "SignoraWare" }
 ];
 
-const PRODUCTS = [
   {
-    name: "Cola Stainless Steel Bottle 500ml",
     description: "Single wall stainless steel bottle with matte finish.",
     price: 405,
     mrp: 450,
     stock: 6,
-    categoryKey: "SignoraWare",
     brand: "SignoraWare",
     tags: ["bottle", "steel"]
   },
   {
-    name: "Cola Stainless Steel Bottle 750ml",
-    description: "Medium capacity stainless steel bottle.",
     price: 440,
     mrp: 489,
     stock: 7,
-    categoryKey: "SignoraWare",
     brand: "SignoraWare",
     tags: ["bottle", "steel"]
   },
   {
-    name: "Cola Stainless Steel Bottle 1000ml",
-    description: "Premium matte finish stainless steel bottle.",
     price: 445,
     mrp: 495,
     stock: 5,
-    categoryKey: "SignoraWare",
     brand: "SignoraWare",
     tags: ["bottle", "steel"]
   },
 
-  {
-    name: "Pilot Stainless Steel Bottle 500ml",
     description: "Lightweight compact hydration bottle.",
     price: 495,
     mrp: 550,
-    stock: 8,
     categoryKey: "SignoraWare",
     brand: "SignoraWare",
     tags: ["bottle", "portable"]
   },
-  {
     name: "Pilot Stainless Steel Bottle 700ml",
-    description: "Portable stainless steel bottle for office use.",
     price: 540,
     mrp: 599,
-    stock: 6,
     categoryKey: "SignoraWare",
     brand: "SignoraWare",
     tags: ["bottle", "steel"]
   },
-  {
     name: "Pilot Stainless Steel Bottle 1000ml",
-    description: "Large capacity sleek steel bottle.",
     price: 585,
     mrp: 650,
-    stock: 9,
     categoryKey: "SignoraWare",
     brand: "SignoraWare",
     tags: ["bottle", "premium"]
   },
-
   {
     name: "OXY Stainless Steel Bottle 750ml",
-    description: "Mirror finish stainless steel bottle.",
     price: 430,
-    mrp: 479,
     stock: 7,
     categoryKey: "SignoraWare",
     brand: "SignoraWare",
     tags: ["bottle", "steel"]
-  },
   {
     name: "OXY Stainless Steel Bottle 1000ml",
-    description: "Durable everyday steel bottle.",
     price: 440,
-    mrp: 489,
     stock: 6,
     categoryKey: "SignoraWare",
     brand: "SignoraWare",
     tags: ["bottle", "durable"]
-  },
 
   {
     name: "Blaze Stainless Steel Bottle 750ml",
-    description: "Premium finish stylish steel bottle.",
-    price: 450,
     mrp: 500,
     stock: 5,
     categoryKey: "SignoraWare",
     brand: "SignoraWare",
-    tags: ["bottle", "premium"]
   },
   {
     name: "Blaze Stainless Steel Bottle 1000ml",
-    description: "High quality stainless steel bottle.",
-    price: 459,
     mrp: 510,
     stock: 8,
     categoryKey: "SignoraWare",
     brand: "SignoraWare",
-    tags: ["bottle", "steel"]
   },
 
   {
     name: "Concept Stainless Steel Bottle 500ml",
-    description: "Minimal design compact bottle.",
     price: 395,
     mrp: 439,
     stock: 6,
@@ -133,7 +98,6 @@ const PRODUCTS = [
   },
   {
     name: "Concept Stainless Steel Bottle 750ml",
-    description: "Slim and elegant steel bottle.",
     price: 410,
     mrp: 455,
     stock: 7,
@@ -143,7 +107,6 @@ const PRODUCTS = [
   },
   {
     name: "Executive Stainless Steel Lunch Box Small",
-    description: "Compact multi-container lunch box.",
     price: 520,
     mrp: 620,
     stock: 5,
@@ -153,7 +116,6 @@ const PRODUCTS = [
   },
   {
     name: "Executive Stainless Steel Lunch Box Medium",
-    description: "Multi-tier lunch box with carry bag.",
     price: 710,
     mrp: 835,
     stock: 6,
@@ -163,7 +125,6 @@ const PRODUCTS = [
   },
   {
     name: "Executive Stainless Steel Lunch Box Large",
-    description: "Large capacity steel lunch carrier.",
     price: 880,
     mrp: 1050,
     stock: 7,
@@ -174,7 +135,6 @@ const PRODUCTS = [
 
   {
     name: "Mid Day Stainless Steel Lunch Box Small",
-    description: "Daily use compact lunch box.",
     price: 480,
     mrp: 569,
     stock: 6,
@@ -184,7 +144,6 @@ const PRODUCTS = [
   },
   {
     name: "Mid Day Stainless Steel Lunch Box Medium",
-    description: "Balanced meal lunch solution.",
     price: 590,
     mrp: 699,
     stock: 5,
@@ -195,7 +154,6 @@ const PRODUCTS = [
 
   {
     name: "Trio Stainless Steel Lunch Box 2 Tier",
-    description: "Two compartment lunch box.",
     price: 820,
     mrp: 999,
     stock: 8,
@@ -205,7 +163,6 @@ const PRODUCTS = [
   },
   {
     name: "Trio Stainless Steel Lunch Box 3 Tier",
-    description: "Three tier stainless steel lunch box.",
     price: 950,
     mrp: 1160,
     stock: 7,
@@ -216,7 +173,6 @@ const PRODUCTS = [
 
   {
     name: "Compact Stainless Steel Lunch Box Small",
-    description: "Leak-proof compact lunch box.",
     price: 520,
     mrp: 620,
     stock: 6,
@@ -226,7 +182,6 @@ const PRODUCTS = [
   },
   {
     name: "Compact Stainless Steel Lunch Box Medium",
-    description: "Portable travel-friendly lunch box.",
     price: 620,
     mrp: 740,
     stock: 5,
@@ -237,7 +192,6 @@ const PRODUCTS = [
 
   {
     name: "All Steel Lunch Box Basic",
-    description: "100% stainless steel lunch container.",
     price: 1020,
     mrp: 1199,
     stock: 6,
@@ -247,7 +201,6 @@ const PRODUCTS = [
   },
   {
     name: "All Steel Lunch Box Premium",
-    description: "Premium airtight steel lunch box.",
     price: 1150,
     mrp: 1399,
     stock: 5,
@@ -298,7 +251,6 @@ function buildProductPayloads(categoryIdMap) {
 
     return {
       name: product.name,
-      description: product.description,
       price: product.price,
       mrp: product.mrp,
       stock: product.stock,

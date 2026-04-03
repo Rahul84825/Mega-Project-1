@@ -7,7 +7,7 @@ import { calculateFinalPrice, formatPrice } from "../utils/priceCalculator";
 
 const EMPTY_FORM = {
   name: "", category: "",
-  description: "", image: "", images: [], inStock: true,
+  image: "", images: [], inStock: true,
   brand: "", tags: "", isHero: false, variants: [],
 };
 
@@ -128,7 +128,6 @@ const AdminProductForm = ({ mode = "add" }) => {
         setForm({
           name:        product.name        || "",
           category:    product.category?._id || product.category || "",
-          description: product.description || "",
           image:       product.images?.[0] || product.image || "",
           images:      product.images?.length ? product.images : (product.image ? [product.image] : []),
           inStock:     product.inStock     ?? true,
@@ -157,7 +156,6 @@ const AdminProductForm = ({ mode = "add" }) => {
               ...prev,
               name: typeof draft.name === "string" ? draft.name : "",
               category: typeof draft.category === "string" ? draft.category : "",
-              description: typeof draft.description === "string" ? draft.description : "",
               inStock: !!draft.inStock,
               brand: typeof draft.brand === "string" ? draft.brand : "",
               tags: typeof draft.tags === "string" ? draft.tags : "",
@@ -192,7 +190,6 @@ const AdminProductForm = ({ mode = "add" }) => {
     const draft = {
       name: form.name,
       category: form.category,
-      description: form.description,
       inStock: !!form.inStock,
       brand: form.brand,
       tags: form.tags,
@@ -377,7 +374,6 @@ const AdminProductForm = ({ mode = "add" }) => {
     const payload = {
       name: form.name,
       category: form.category,
-      description: form.description,
       image: (form.images || [])[0] || "",
       images: form.images || [],
       brand: form.brand,
@@ -661,12 +657,6 @@ const AdminProductForm = ({ mode = "add" }) => {
               })}
             </div>
           </div>
-        </div>
-
-        {/* ── Details ── */}
-        <div>
-          <label className="block text-[13px] font-bold text-slate-700 mb-1.5">Description</label>
-          <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Brief product description..." rows={4} className={`${inputClass(false)} resize-none`} />
         </div>
 
         <div>

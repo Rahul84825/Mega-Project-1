@@ -33,7 +33,6 @@ const embeddedVariantSchema = new mongoose.Schema(
 const productSchema = new mongoose.Schema(
   {
     name:          { type: String, required: true, trim: true },
-    description:   { type: String, default: "" },
     category_id:   { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
     // Deprecated product-level pricing kept for legacy products during migration.
     price:         { type: Number, min: 0, default: undefined },

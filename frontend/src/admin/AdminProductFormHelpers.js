@@ -97,7 +97,6 @@ export const buildProductPayload = (form, variants) => {
 
   return {
     name: form.name,
-    description: form.description,
     category: form.category,
     image: (form.images || [])[0] || "",
     images: form.images || [],

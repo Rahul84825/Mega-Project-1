@@ -8,6 +8,7 @@
     "seed": "node productSeeder.js",
     "migrate:categories": "node scripts/migrateCategoryIds.js",
     "migrate:variants": "node scripts/migrateLegacyProductsToVariants.js",
+    "cleanup:product-description": "node scripts/removeProductDescriptions.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {
