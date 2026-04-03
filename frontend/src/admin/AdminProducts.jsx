@@ -22,6 +22,38 @@ const AdminProducts = () => {
 
   const getId = (p) => p._id || p.id;
 
+  const getDisplayPricing = (product) => {
+    const variants = Array.isArray(product?.variants) ? product.variants : [];
+    if (!variants.length) {
+      return {
+        finalPrice: Number(product?.price) || 0,
+        originalPrice: Number(product?.mrp ?? product?.originalPrice) || 0,
+      };
+    }
+
+    const computed = variants
+      .map((variant) => {
+        const original = Number(variant?.originalPrice ?? variant?.price ?? variant?.mrp);
+        const discount = Number(variant?.discountPercent ?? 0);
+        if (!Number.isFinite(original) || original <= 0) return null;
+        const safeDiscount = Math.max(0, Math.min(discount, 90));
+        const final = Math.round((original - (original * safeDiscount / 100) + Number.EPSILON) * 100) / 100;
+        return { original, final };
+      })
+      .filter(Boolean);
+
+    if (!computed.length) {
+      return {
+        finalPrice: Number(product?.price) || 0,
+        originalPrice: Number(product?.mrp ?? product?.originalPrice) || 0,
+      };
+    }
+
+    const finalPrice = Math.min(...computed.map((item) => item.final));
+    const originalPrice = Math.max(...computed.map((item) => item.original));
+    return { finalPrice, originalPrice };
+  };
+
   const getCategoryName = (cat) => {
     if (!cat) return "-";
     if (typeof cat === "object") return cat.name || cat.label || "-";
@@ -126,6 +158,7 @@ const AdminProducts = () => {
                 filtered.map((product) => {
                   const id = getId(product);
                   const preview = product.images?.[0] || product.image || "";
+                  const pricing = getDisplayPricing(product);
 
                   return (
                     <tr key={id} className="hover:bg-blue-50/40 transition-colors group">
@@ -152,9 +185,9 @@ const AdminProducts = () => {
                       </td>
 
                       <td className="px-6 py-3">
-                        <p className="font-black text-slate-900">₹{(product.price || 0).toLocaleString("en-IN")}</p>
-                        {!!(product.mrp || product.originalPrice) && (
-                          <p className="text-xs text-slate-400 line-through">₹{(product.mrp || product.originalPrice).toLocaleString("en-IN")}</p>
+                        <p className="font-black text-slate-900">₹{pricing.finalPrice.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+                        {pricing.originalPrice > pricing.finalPrice && (
+                          <p className="text-xs text-slate-400 line-through">₹{pricing.originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
                         )}
                       </td>
 

@@ -1,10 +1,26 @@
 const mongoose = require("mongoose");
 
+const MAX_VARIANT_PRICE = 10000000;
+const toFiniteNumber = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+};
+
 const embeddedVariantSchema = new mongoose.Schema(
   {
     id:    { type: String, required: true, trim: true },
     label: { type: String, required: true, trim: true },
-    originalPrice: { type: Number, required: true, min: 0 },  // List/MRP price
+    originalPrice: {
+      type: Number,
+      required: true,
+      set: toFiniteNumber,
+      min: 0,
+      max: MAX_VARIANT_PRICE,
+      validate: {
+        validator: (value) => Number.isFinite(value) && value > 0,
+        message: "originalPrice must be a number greater than 0",
+      },
+    },  // List/MRP price
     discountPercent: { type: Number, default: 0, min: 0, max: 90 },  // Discount percentage (max 90%)
     stock: { type: Number, required: true, min: 0, default: 0 },
     // Legacy fields for backward compatibility

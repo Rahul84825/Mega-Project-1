@@ -85,7 +85,9 @@ export const ProductCard = memo(({ product, onCartOpen }) => {
     navigate(nextRoute);
   }, [navigate, product]);
 
-  const savedAmount = product.originalPrice - product.price;
+  const displayPrice = toNumber(product.price, 0);
+  const displayOriginalPrice = toNumber(product.originalPrice, 0);
+  const savedAmount = Math.max(0, displayOriginalPrice - displayPrice);
 
   return (
     <div
@@ -159,11 +161,11 @@ export const ProductCard = memo(({ product, onCartOpen }) => {
         {/* Pricing */}
         <div className="flex flex-wrap items-end gap-1.5 sm:gap-2 mt-auto mb-4 sm:mb-5">
           <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            ₹{product.price.toLocaleString()}
+            ₹{displayPrice.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
           </span>
-          {product.originalPrice > product.price && (
+          {displayOriginalPrice > displayPrice && (
             <span className="text-xs sm:text-sm font-medium text-slate-400 line-through mb-0.5">
-              ₹{product.originalPrice.toLocaleString()}
+              ₹{displayOriginalPrice.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
             </span>
           )}
           {savedAmount > 0 && (

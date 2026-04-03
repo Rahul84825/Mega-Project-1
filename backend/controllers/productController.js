@@ -4,6 +4,15 @@ const Category     = require("../models/Category");
 const mongoose     = require("mongoose");
 const { validateDiscountPercent } = require("../utils/priceCalculator");
 
+const MAX_VARIANT_PRICE = 10000000;
+
+const toFiniteNumber = (value, fallback = NaN) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const roundMoney = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+
 const normalizeCategoryToken = (value = "") =>
   String(value)
     .trim()
@@ -60,10 +69,14 @@ const normalizeVariantsInput = (rawVariants, { required = false } = {}) => {
     const id = String(variant?.id || variant?._id || createVariantId(index)).trim();
     const label = String(variant?.label || "").trim();
     
-    // NEW: Use originalPrice and discountPercent
-    const originalPrice = Number(variant?.originalPrice ?? variant?.price ?? variant?.mrp);
-    const discountPercent = Number(variant?.discountPercent ?? 0);
-    const stock = Number(variant?.stock);
+    // Parse incoming values and enforce numeric invariants before DB write.
+    const originalPriceRaw = variant?.originalPrice ?? variant?.price ?? variant?.mrp;
+    const discountPercentRaw = variant?.discountPercent ?? 0;
+    const stockRaw = variant?.stock;
+
+    const originalPrice = toFiniteNumber(originalPriceRaw);
+    const discountPercent = toFiniteNumber(discountPercentRaw);
+    const stock = toFiniteNumber(stockRaw);
 
     if (!label) {
       const err = new Error(`Variant #${index + 1}: label is required`);
@@ -77,8 +90,15 @@ const normalizeVariantsInput = (rawVariants, { required = false } = {}) => {
       throw err;
     }
 
-    if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 90) {
-      const err = new Error(`Variant #${index + 1}: discountPercent must be between 0 and 90`);
+    if (originalPrice > MAX_VARIANT_PRICE) {
+      const err = new Error(`Variant #${index + 1}: originalPrice cannot exceed ${MAX_VARIANT_PRICE}`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const discountValidation = validateDiscountPercent(discountPercent);
+    if (!discountValidation.valid) {
+      const err = new Error(`Variant #${index + 1}: ${discountValidation.error}`);
       err.statusCode = 400;
       throw err;
     }
@@ -92,8 +112,9 @@ const normalizeVariantsInput = (rawVariants, { required = false } = {}) => {
     return {
       id,
       label,
-      originalPrice: Math.round(originalPrice),
-      discountPercent: Math.round(discountPercent * 100) / 100,  // Allow decimals
+      // Persist price/discount with 2-decimal precision to avoid float drift.
+      originalPrice: roundMoney(originalPrice),
+      discountPercent: roundMoney(discountPercent),
       stock: Math.floor(stock),
     };
   });
@@ -137,8 +158,9 @@ const getProducts = asyncHandler(async (req, res) => {
   }
 
   const sortMap = {
-    "price-low":  { price: 1 },
-    "price-high": { price: -1 },
+    // Product-level `price` was removed; fallback to first variant original price for sort.
+    "price-low":  { "variants.originalPrice": 1, createdAt: -1 },
+    "price-high": { "variants.originalPrice": -1, createdAt: -1 },
     "newest":     { createdAt: -1 },
     "default":    { createdAt: -1 },
   };

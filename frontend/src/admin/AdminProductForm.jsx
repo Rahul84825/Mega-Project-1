@@ -11,6 +11,20 @@ const EMPTY_FORM = {
   brand: "", tags: "", isHero: false, variants: [],
 };
 
+const ADD_PRODUCT_DRAFT_KEY = "admin.addProductForm.draft.v1";
+const MAX_VARIANT_PRICE = 10000000;
+
+const readAddProductDraft = () => {
+  try {
+    const raw = localStorage.getItem(ADD_PRODUCT_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
 const AdminProductForm = ({ mode = "add" }) => {
   const { id }       = useParams();
   const navigate     = useNavigate();
@@ -29,6 +43,7 @@ const AdminProductForm = ({ mode = "add" }) => {
 
   const formPopulated = useRef(false);
   const variantCounterRef = useRef(0);
+  const lastDraftRef = useRef("");
 
   const createVariantId = () => {
     variantCounterRef.current += 1;
@@ -84,6 +99,8 @@ const AdminProductForm = ({ mode = "add" }) => {
       const originalPrice = Number(variant.originalPrice);
       if (!Number.isFinite(originalPrice) || originalPrice <= 0) {
         fieldErrors[`${variant.id}.originalPrice`] = "Price must be > 0";
+      } else if (originalPrice > MAX_VARIANT_PRICE) {
+        fieldErrors[`${variant.id}.originalPrice`] = `Price cannot exceed ${MAX_VARIANT_PRICE.toLocaleString("en-IN")}`;
       }
 
       const discountPercent = Number(variant.discountPercent);
@@ -127,13 +144,81 @@ const AdminProductForm = ({ mode = "add" }) => {
 
   useEffect(() => {
     if (mode === "add" && !formPopulated.current) {
+      // Restore saved draft for Add Product flow (excluding files/images), if present.
+      const draft = readAddProductDraft();
+
       setForm((prev) => {
-        if (Array.isArray(prev.variants) && prev.variants.length > 0) return prev;
-        return { ...prev, variants: [createEmptyVariant()] };
+        const merged = draft
+          ? {
+              ...prev,
+              name: typeof draft.name === "string" ? draft.name : "",
+              category: typeof draft.category === "string" ? draft.category : "",
+              description: typeof draft.description === "string" ? draft.description : "",
+              inStock: !!draft.inStock,
+              brand: typeof draft.brand === "string" ? draft.brand : "",
+              tags: typeof draft.tags === "string" ? draft.tags : "",
+              isHero: !!draft.isHero,
+              // Never restore images/files from localStorage.
+              image: "",
+              images: [],
+              variants: normalizeIncomingVariantsLocal(draft.variants, "0"),
+            }
+          : prev;
+
+        if (Array.isArray(merged.variants) && merged.variants.length > 0) return merged;
+        return { ...merged, variants: [createEmptyVariant()] };
       });
+
+      if (draft) {
+        try {
+          lastDraftRef.current = JSON.stringify(draft);
+        } catch {
+          lastDraftRef.current = "";
+        }
+      }
+
       formPopulated.current = true;
     }
   }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "add" || !formPopulated.current) return;
+
+    // Persist only lightweight text/number/boolean fields; never store images/files.
+    const draft = {
+      name: form.name,
+      category: form.category,
+      description: form.description,
+      inStock: !!form.inStock,
+      brand: form.brand,
+      tags: form.tags,
+      isHero: !!form.isHero,
+      variants: (form.variants || []).map((variant) => ({
+        id: String(variant.id || ""),
+        label: String(variant.label || ""),
+        originalPrice: String(variant.originalPrice ?? ""),
+        discountPercent: String(variant.discountPercent ?? "0"),
+        stock: String(variant.stock ?? "0"),
+      })),
+    };
+
+    let serialized = "";
+    try {
+      serialized = JSON.stringify(draft);
+    } catch {
+      return;
+    }
+
+    if (serialized === lastDraftRef.current) return;
+
+    // Tiny debounce avoids excessive sync localStorage writes while typing.
+    const timer = setTimeout(() => {
+      localStorage.setItem(ADD_PRODUCT_DRAFT_KEY, serialized);
+      lastDraftRef.current = serialized;
+    }, 120);
+
+    return () => clearTimeout(timer);
+  }, [mode, form]);
 
   const set = (key, val) => {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -268,13 +353,20 @@ const AdminProductForm = ({ mode = "add" }) => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
 
-    const normalizedVariants = (form.variants || []).map((variant) => ({
-      id: String(variant.id),
-      label: String(variant.label || "").trim(),
-      originalPrice: Math.round(Number(variant.originalPrice || 0)),
-      discountPercent: Math.round(Number(variant.discountPercent || 0) * 100) / 100,
-      stock: Math.max(0, Math.floor(Number(variant.stock || 0))),
-    }));
+    // Final payload normalization ensures numeric types and stable 2-decimal precision.
+    const normalizedVariants = (form.variants || []).map((variant) => {
+      const originalPriceNumber = Number(variant.originalPrice);
+      const discountPercentNumber = Number(variant.discountPercent);
+      const stockNumber = Number(variant.stock);
+
+      return {
+        id: String(variant.id),
+        label: String(variant.label || "").trim(),
+        originalPrice: Math.round((Number.isFinite(originalPriceNumber) ? originalPriceNumber : 0) * 100) / 100,
+        discountPercent: Math.round((Number.isFinite(discountPercentNumber) ? discountPercentNumber : 0) * 100) / 100,
+        stock: Math.max(0, Math.floor(Number.isFinite(stockNumber) ? stockNumber : 0)),
+      };
+    });
 
     const variantStockTotal = normalizedVariants.reduce((sum, variant) => sum + variant.stock, 0);
 
@@ -298,6 +390,15 @@ const AdminProductForm = ({ mode = "add" }) => {
       } else {
         await updateProduct(id, payload);
       }
+      // On successful Add Product, clear persisted draft and reset the form.
+      if (mode === "add") {
+        localStorage.removeItem(ADD_PRODUCT_DRAFT_KEY);
+        lastDraftRef.current = "";
+        setForm({ ...EMPTY_FORM, variants: [createEmptyVariant()] });
+        setErrors({});
+        setVariantErrors({});
+      }
+
       setSaved(true);
       setTimeout(() => navigate("/admin/products"), 1000);
     } catch (err) {
@@ -493,6 +594,7 @@ const AdminProductForm = ({ mode = "add" }) => {
                       <input
                         type="number"
                         min="1"
+                        step="0.01"
                         value={variant.originalPrice}
                         onChange={(e) => updateVariant(variant.id, "originalPrice", e.target.value)}
                         placeholder="999"
