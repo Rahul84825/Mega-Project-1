@@ -31,6 +31,9 @@ const Categories = ({ activeCategory = "all", onCategoryChange }) => {
   };
 
   const resolveCategoryImage = (category) => {
+    const categoryImage = category.image || category.imageUrl || category.banner || "";
+    if (categoryImage) return categoryImage;
+
     const categoryId = String(category.id || category._id || "");
     const categorySlug = String(category.slug || "").toLowerCase();
 
@@ -42,7 +45,7 @@ const Categories = ({ activeCategory = "all", onCategoryChange }) => {
       return productCategoryId === categoryId || (categorySlug && productCategorySlug === categorySlug);
     });
 
-    return matchedProduct?.images?.[0] || matchedProduct?.image || category.image || "";
+    return matchedProduct?.images?.[0] || matchedProduct?.image || "";
   };
 
   const renderSkeleton = () => (
